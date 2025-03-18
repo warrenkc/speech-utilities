@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Speech to Text with Azure Cognitive Services</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Mulish:ital,wght@0,200..1000;1,200..1000&family=Oswald:wght@200..700&display=swap" rel="stylesheet">
@@ -24,7 +23,7 @@
 
   </head>
   <body>
-    <div class="container mt-5">
+    <div class="container mt-1">
       <div class="row justify-content-center">
           <div class="col-md-10">
               <div class="card shadow-lg">
@@ -32,10 +31,11 @@
                       <h1>Speech to Text</h1><p>Version .002</p>
                   </div>
                   <div class="card-body">
-                      <button class="btn btn-primary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+                      <button class="btn btn-primary mb-2 border-1" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
                           Instructions / Settings ⚙️
                       </button>
-                      <div class="collapse mt-2" id="collapseExample">
+                      <div class="collapse mt-3 mb-2 border rounded p-3" style="background-color: rgb(255, 255, 247)" id="collapseExample">
+                
                           <div class="card card-body">
                               <h3>Instructions</h3>
                               <p>1. Enter your Azure Subscription Key and select the Azure Service Region.</p>
@@ -124,6 +124,9 @@
                           <select id="microphoneOptions" class="form-select mb-1">                                
                           </select>
                       </div>
+                      <!-- Close button for the collapse. -->
+                        <button class="btn btn-sm btn-primary mb-2 border-1" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+                            Close Instructions / Settings ⚙️
                       </div>
                       <div class="mb-3 d-flex justify-content-between">
                           <button class="btn btn-primary" id="startButton">Start Microphone 🎤</button>
