@@ -1,12 +1,93 @@
 /* styles.css */
 body {
-  background-color: #f8f9fa; /* Light grey background */
+  background-color: white;
+  /* Light grey background */
+  /* Cool gradient background */
+  background-image: linear-gradient(120deg, #f6d365 0%, #fda085 100%);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+
 }
 
-.card-header h1 {
-  margin-bottom: 0; /* Remove default margin on h2 in card header */
+.header {
+  margin-bottom: 0;
+  /* Remove default margin on h2 in card header */
   font-family: "Oswald", serif;
   font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
+  color: white;
+  text-shadow: 2px 2px 4px #000000;
+  text-align: center;
+  letter-spacing: 2px;
+
+}
+
+.modal-content {
+  background-image: linear-gradient(120deg, #f6d365 0%, #fda085 100%);
+}
+
+.warrenz-button {
+  /* Frosted glass semi transparent with filter blur, pro look */
+  background-color: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgb(46, 46, 46);
+  padding: 7px 7px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 1.1rem;
+  /* rem means:   */
+  margin: 4px 2px;
+  font-family: "Oswald", serif;
+}
+
+.warrenz-button:hover,
+.warrenz-button:active {
+  background-color: rgba(255, 255, 255, 0.7);
+  color: black;
+}
+
+.main-textarea-inputs {
+  font-family: "Oswald", serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  opacity: 0.8;
+  font-size: 1.5rem !important;
+}
+
+.fullscreen-textarea {
+
+  background-color: black;
+  color: white;
+  font-family: "Oswald", serif;
+  font-size: 5rem;
+  padding:50px;
+}
+
+.warrenz-label {
+  font-family: "Oswald", serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  color: white;
+  text-shadow: 2px 2px 4px #000000;
+  text-align: center;
+  letter-spacing: 1.5px;
+  font-size: 1.4rem;
+}
+
+#backgroundVideo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;
+  /* Ensures the video stays in the background */
 }
