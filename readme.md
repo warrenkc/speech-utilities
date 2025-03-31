@@ -7,9 +7,8 @@ Known issues:
 * stopContinuousRecognitionAsync causes this error: Error stopping speech recognition:"TypeError: undefined is not an object (evaluating 'f.close')"
 
 **Features I want to add:**
+* Add full screen output button or some way to allow this to be used in a presentation or with zoom screen sharing.
 * Allow to use on device speech to text if Azure is not available.
-* Allow for speech translation. This means I can translate audio into another language text. Example: Mandarin speech into English text directly in one step. Add radio button to use Azure speech translation versus using LLM (Language Learning Model) for speech translation.
-* Improve the UI.
 * Option to send captions to Zoom for realtime speech translated captions.
 * Improve interface.
 
