@@ -8,6 +8,7 @@ Screenshot:
 
 Known issues:
 * stopContinuousRecognitionAsync causes this error: Error stopping speech recognition:"TypeError: undefined is not an object (evaluating 'f.close')" This doesn't really affect the operation but it is annoying. I will try to fix this in the future.
+* On mobile safari, the full screen options do not work correctly.
 
 **Features I want to add:**
 * Allow to use on device speech to text if Azure is not available.
