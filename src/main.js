@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const backgroundVideo = document.getElementById('backgroundVideo');
     const enableVideoBackground = document.getElementById('enableVideoBackground');
     const subscriptionKeyInput = document.getElementById('subscriptionKey');
+    const btnShowSubscriptionKey = document.getElementById('btnShowSubscriptionKey');
     const regionInput = document.getElementById('region');
     const regionOptions = document.getElementById("regionOptions");
     const languageOptions = document.getElementById("languageOptions");
@@ -52,6 +53,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     enableVideoBackground.addEventListener('change', saveEnableVideoBackground); // Save video background setting on change
     subscriptionKeyInput.addEventListener('input', saveKey); // Save key on input. This means that the key is saved as soon as it is entered.
+    btnShowSubscriptionKey.addEventListener('click', () => {
+        subscriptionKeyInput.type = subscriptionKeyInput.type === 'password' ? 'text' : 'password';
+        btnShowSubscriptionKey.textContent = subscriptionKeyInput.type === 'password' ? 'Show Key' : 'Hide Key';
+    });
     regionOptions.addEventListener('change', saveRegion); // Save region on input. This means that the region is saved as soon as it is entered.
     languageOptions.addEventListener('change', saveLanguage); // Save language on input. This means that the language is saved as soon as it is entered.
     translationOptions.addEventListener('change', saveTranslationOption); // Save translation on input. This means that the translation is saved as soon as it is entered.
