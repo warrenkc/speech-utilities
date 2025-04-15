@@ -27,7 +27,7 @@
 </head>
 
 <body>
-    <video autoplay muted loop id="backgroundVideo">
+    <video autoplay muted loop id="backgroundVideo" class="d-none" >
         <source src="src/videos/ocean-backdrop.mp4" type="video/mp4">
         <source src="src/videos/ocean-backdrop-av1.mp4" type="video/av1">
         Your browser does not support the video tag.
@@ -43,6 +43,13 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <!-- Checkbox to enable video background -->
+                    <div class="form-floating mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="enableVideoBackground">
+                            <label class="form-check-label" for="enableVideoBackground">Enable Video Background</label>
+                        </div>
+                    </div>
                     <div class="form-floating mb-3">
                         <input type="password" class="form-control" id="subscriptionKey"
                             placeholder="Enter your Subscription Key">
