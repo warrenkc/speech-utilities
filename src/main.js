@@ -38,13 +38,8 @@ document.addEventListener('DOMContentLoaded', function () {
     groqAPIKeyInput.value = localStorage.getItem('groqAPIKey') || "";
     llmPromptInput.value = localStorage.getItem('llmPrompt') || "";
 
-    if (enableVideoBackground.checked) {
-        // toggle d-none and d-block classes
-        backgroundVideo.classList.remove("d-none");
-    }
-    else {
-        backgroundVideo.classList.add("d-none");
-    }
+    // Set the background video based on the checkbox
+    setBackgroundVideo();
 
     loadInputDevices(); // Load input devices
 
@@ -76,6 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function saveEnableVideoBackground() {
         localStorage.enableVideoBackground = enableVideoBackground.checked;
         console.debug("Enable video background: ", enableVideoBackground.checked);
+        setBackgroundVideo(); // Update background video visibility
     }
     function saveKey() {
         localStorage.subscriptionKey = subscriptionKeyInput.value;
@@ -107,6 +103,15 @@ document.addEventListener('DOMContentLoaded', function () {
         localStorage.llmPrompt = llmPromptInput.value;
     }
 
+    function setBackgroundVideo() {
+        if (enableVideoBackground.checked) {
+            // toggle d-none and d-block classes
+            backgroundVideo.classList.remove("d-none");
+        }
+        else {
+            backgroundVideo.classList.add("d-none");
+        }
+    }
 
     function loadInputDevices() {
         microphoneOptions.innerHTML = ""; // Clear existing options
