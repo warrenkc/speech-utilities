@@ -7,6 +7,8 @@ import * as sdk from "microsoft-cognitiveservices-speech-sdk";
 
 
 document.addEventListener('DOMContentLoaded', function () {
+    const backgroundVideo = document.getElementById('backgroundVideo');
+    const enableVideoBackground = document.getElementById('enableVideoBackground');
     const subscriptionKeyInput = document.getElementById('subscriptionKey');
     const regionInput = document.getElementById('region');
     const regionOptions = document.getElementById("regionOptions");
@@ -27,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let audioConfig;
 
     // Load settings from local storage
+    enableVideoBackground.checked = localStorage.getItem('enableVideoBackground') === 'true';
     subscriptionKeyInput.value = localStorage.getItem('subscriptionKey') || "";
     regionOptions.value = localStorage.getItem('region') || "eastasia"; // Default region
     languageOptions.value = localStorage.getItem('language') || "en-US"; // Default language
@@ -35,7 +38,16 @@ document.addEventListener('DOMContentLoaded', function () {
     groqAPIKeyInput.value = localStorage.getItem('groqAPIKey') || "";
     llmPromptInput.value = localStorage.getItem('llmPrompt') || "";
 
+    if (enableVideoBackground.checked) {
+        // toggle d-none and d-block classes
+        backgroundVideo.classList.remove("d-none");
+    }
+    else {
+        backgroundVideo.classList.add("d-none");
+    }
+
     loadInputDevices(); // Load input devices
+
 
     const storedMicrophone = localStorage.getItem('microphone');
     if (storedMicrophone && Array.from(microphoneOptions.options).some(option => option.value === storedMicrophone)) {
@@ -43,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
         microphoneOptions.value = "default"; // Default microphone
     }
-
+    enableVideoBackground.addEventListener('change', saveEnableVideoBackground); // Save video background setting on change
     subscriptionKeyInput.addEventListener('input', saveKey); // Save key on input. This means that the key is saved as soon as it is entered.
     regionOptions.addEventListener('change', saveRegion); // Save region on input. This means that the region is saved as soon as it is entered.
     languageOptions.addEventListener('change', saveLanguage); // Save language on input. This means that the language is saved as soon as it is entered.
@@ -61,6 +73,10 @@ document.addEventListener('DOMContentLoaded', function () {
     stopButton.addEventListener('click', stopSpeechToText);
 
     // Save settings to local storage
+    function saveEnableVideoBackground() {
+        localStorage.enableVideoBackground = enableVideoBackground.checked;
+        console.debug("Enable video background: ", enableVideoBackground.checked);
+    }
     function saveKey() {
         localStorage.subscriptionKey = subscriptionKeyInput.value;
     }
@@ -306,7 +322,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Full screen mode for text area.
 
     const btnOutputTextFullScreen = document.getElementById('btnOutputTextFullScreen');
-   
+
 
     btnOutputTextFullScreen.addEventListener('click', () => {
         if (outputTextarea.requestFullscreen) {
