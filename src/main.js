@@ -7,6 +7,10 @@ import * as sdk from "microsoft-cognitiveservices-speech-sdk";
 
 
 document.addEventListener('DOMContentLoaded', function () {
+    const visualizerCanvas = document.getElementById('audioVisualizer');
+    const vctx = visualizerCanvas.getContext('2d');
+    let audioAnalyser, audioStream, freqData;
+
     const backgroundVideo = document.getElementById('backgroundVideo');
     const enableVideoBackground = document.getElementById('enableVideoBackground');
     const subscriptionKeyInput = document.getElementById('subscriptionKey');
@@ -137,6 +141,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function startSpeechToText() {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioStream = stream;
+        setupAudioVisualizer(stream);
         startButton.disabled = true;
         stopButton.disabled = false;
         outputTextarea.value = ""; // Clear previous output
@@ -149,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function () {
             alert("Please enter your Azure Subscription Key and Region.");
             startButton.disabled = false;
             stopButton.disabled = true;
-            statusDisplay.textContent = "Ready";
+            statusDisplay.textContent = "Status: Ready";
             return;
         }
 
@@ -176,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             console.log("recognizer: ", recognizer);
 
-            statusDisplay.textContent = "Listening...";
+            statusDisplay.textContent = "Status: Listening...";
 
             recognizer.recognizing = (s, event) => {
                 // Intermediate result (while speaking) - applies to both translation and non-translation
@@ -245,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function () {
             recognizer.canceled = (s, event) => {
                 console.log(`Recognition canceled. Reason: ${event.reason}`);
                 if (event.reason == sdk.CancellationReason.Error) {
-                    statusDisplay.textContent = `ERROR: ${event.errorDetails}`;
+                    statusDisplay.textContent = `Status: ERROR: ${event.errorDetails}`;
                 }
                 stopSpeechToText(); // Stop on cancellation as well
             };
@@ -254,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (error) {
             console.error("Error initializing speech recognition:", error);
-            statusDisplay.textContent = `Error: ${error.message}`;
+            statusDisplay.textContent = `Status: Error: ${error.message}`;
             startButton.disabled = false;
             stopButton.disabled = true;
         }
@@ -263,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function stopSpeechToText() {
         startButton.disabled = false;
         stopButton.disabled = true;
-        statusDisplay.textContent = "Stopping...";
+        statusDisplay.textContent = "Status: Stopping...";
 
         if (recognizer && recognizer.stopContinuousRecognitionAsync) {
             recognizer.stopContinuousRecognitionAsync(
@@ -271,16 +278,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     recognizer.close();
                     recognizer = undefined;
                     audioConfig = undefined;
-                    statusDisplay.textContent = "Ready";
+                    statusDisplay.textContent = "Status: Ready";
                 },
                 error => {
                     console.error("Error stopping speech recognition:", error);
-                    statusDisplay.textContent = `Error stopping: ${error.message}`;
-                    statusDisplay.textContent = "Ready"; // Still set to ready state after error
+                    statusDisplay.textContent = `Status: Error stopping: ${error.message}`;
+                    statusDisplay.textContent = "Status: Ready"; // Still set to ready state after error
                 }
             );
         } else {
-            statusDisplay.textContent = "Ready"; // If recognizer wasn't started
+            statusDisplay.textContent = "Status: Ready"; // If recognizer wasn't started
+        }
+        if (audioStream) {
+            audioStream.getTracks().forEach(track => track.stop());
+            audioStream = null;
         }
     }
     /*
@@ -377,5 +388,33 @@ document.addEventListener('DOMContentLoaded', function () {
             outputTextFinal.classList.add('main-textarea-inputs');
         }
     });
+
+    function setupAudioVisualizer(stream) {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = audioCtx.createMediaStreamSource(stream);
+        audioAnalyser = audioCtx.createAnalyser();
+        audioAnalyser.fftSize = 64;
+        const bufferLength = audioAnalyser.frequencyBinCount;
+        freqData = new Uint8Array(bufferLength);
+
+        source.connect(audioAnalyser);
+        drawAudioVisualizer();
+    }
+
+    function drawAudioVisualizer() {
+        requestAnimationFrame(drawAudioVisualizer);
+
+        audioAnalyser.getByteFrequencyData(freqData);
+
+        vctx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+        const barWidth = visualizerCanvas.width / freqData.length;
+
+        for (let i = 0; i < freqData.length; i++) {
+            const val = freqData[i];
+            const height = (val / 255) * visualizerCanvas.height;
+            vctx.fillStyle = `rgb(${val}, ${255 - val}, 180)`;
+            vctx.fillRect(i * barWidth, visualizerCanvas.height - height, barWidth - 1, height);
+        }
+    }
 
 });
