@@ -54,6 +54,7 @@
                         <input type="password" class="form-control" id="subscriptionKey"
                             placeholder="Enter your Subscription Key">
                         <label for="subscriptionKey">Azure Subscription Key</label>
+                        <button type="button" id="btnShowSubscriptionKey" class="btn btn-sm btn-outline-secondary position-absolute top-50 end-0 translate-middle-y me-2">Show</button>
                     </div>
                     <div class="form-floating mb-3">
                         <!-- see https://aka.ms/csspeech/region for more details-->
@@ -150,6 +151,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <p>Version .005</p>
                     <p>This webpage was created by <a href="https://iamwarren.us">Warren Churulich</a>. It is open
                         source using the MIT License.</p>
                     <p>It uses the Azure Cognitive Services Speech SDK to convert speech to text, with the option of
@@ -166,9 +168,8 @@
     <div class="container mt-1">
         <div class="row justify-content-center">
             <div class="col-md-10">
-                <div class="header">
-                    <h1>Speech to Text Utilities</h1>
-                    <p>Version .003</p>
+                <div class="header mb-3">
+                    <h1>Speech to Text Utilities</h1>                    
                 </div>
 
 
@@ -183,6 +184,11 @@
                         data-bs-target="#aboutHelpModal">
                         About / Help 🤨</button>
                 </div>
+                <div class="d-flex align-items-center" style="gap: 1rem; margin: 1rem 0;">
+                    <div id="status" class="text-left warrenz-label">Status: Ready</div>
+                    <canvas id="audioVisualizer" height="50" style="flex-shrink: 0;"></canvas>
+                </div>
+                
                 <div class="mb-3">
                     <label for="outputTextInProgress" class="form-label warrenz-label">Output Text In Progress</label>
                     <textarea class="form-control shadow main-textarea-inputs" id="outputTextInProgress" rows="2"
@@ -215,7 +221,7 @@
                     <textarea class="form-control shadow main-textarea-inputs" id="outputTextFinal" rows="5" readonly
                         placeholder="Speech to text output will appear here..."></textarea>
                 </div>
-                <div id="status" class=" text-center warrenz-label">Ready</div>
+                
             </div>
         </div>
 

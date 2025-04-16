@@ -3,11 +3,14 @@ View the page at: https://warrenkc.github.io/speech-utilities/
 This webpage will allow for speech to text using Azure cognitive services in realtime using an audio input device on their device. https://azure.microsoft.com/en-us/products/ai-services/
 Note: the subscription key is stored in your browser's local storage. https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
 
+Screenshot:
+![Screenshot](src/images/Screenshot%202025-04-15%20at%209.08.52 AM.png)
+
 Known issues:
-* stopContinuousRecognitionAsync causes this error: Error stopping speech recognition:"TypeError: undefined is not an object (evaluating 'f.close')"
+* stopContinuousRecognitionAsync causes this error: Error stopping speech recognition:"TypeError: undefined is not an object (evaluating 'f.close')" This doesn't really affect the operation but it is annoying. I will try to fix this in the future.
+* On mobile safari, the full screen options do not work correctly.
 
 **Features I want to add:**
-* Add full screen output button or some way to allow this to be used in a presentation or with zoom screen sharing.
 * Allow to use on device speech to text if Azure is not available.
 * Option to send captions to Zoom for realtime speech translated captions.
 * Improve interface.
