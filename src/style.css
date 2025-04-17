@@ -29,6 +29,10 @@ body {
   letter-spacing: 2px;
 
 }
+#logo {
+  max-width: 200px;
+
+}
 
 .modal-content {
   background-image: linear-gradient(120deg, #f6d365 0%, #fda085 100%);
