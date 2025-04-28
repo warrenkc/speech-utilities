@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
     subscriptionKeyInput.value = localStorage.getItem('subscriptionKey') || "";
     regionOptions.value = localStorage.getItem('region') || "eastasia"; // Default region
     languageOptions.value = localStorage.getItem('language') || "en-US"; // Default language
-    translationOptions.value = localStorage.getItem('tranlationOption') || "noTranslation"; // Default translation
+    translationOptions.value = localStorage.getItem('translationOption') || "noTranslation"; // Default translation
     outputLanguageOptions.value = localStorage.getItem('outputLanguageOption') || "en-US"; // Default output language
     groqAPIKeyInput.value = localStorage.getItem('groqAPIKey') || "";
     llmPromptInput.value = localStorage.getItem('llmPrompt') || "";
