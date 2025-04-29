@@ -342,42 +342,56 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const btnOutputTextFullScreen = document.getElementById('btnOutputTextFullScreen');
     const btnOutputTextFinalFullScreen = document.getElementById('btnOutputTextFinalFullScreen');
-    
-    function requestFullscreen(element) {
-        if (element.requestFullscreen) {
-            element.requestFullscreen();
-        } else if (element.webkitRequestFullscreen) {
-            element.webkitRequestFullscreen();
-        } else if (element.mozRequestFullScreen) {
-            element.mozRequestFullScreen();
-        } else if (element.msRequestFullscreen) {
-            element.msRequestFullscreen();
-        }
+
+    function isMobileDevice() {
+        return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
-    
-    function handleFullscreenChange() {
-        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-            outputTextarea.classList.remove('fullscreen-textarea');
-            outputTextarea.classList.add('main-textarea-inputs');
-            outputTextFinal.classList.remove('fullscreen-textarea');
-            outputTextFinal.classList.add('main-textarea-inputs');
+
+    if (isMobileDevice() === false) {
+
+        function requestFullscreen(element) {
+            if (element.requestFullscreen) {
+                element.requestFullscreen();
+            } else if (element.webkitRequestFullscreen) {
+                element.webkitRequestFullscreen();
+            } else if (element.mozRequestFullScreen) {
+                element.mozRequestFullScreen();
+            } else if (element.msRequestFullscreen) {
+                element.msRequestFullscreen();
+            }
         }
+
+        function handleFullscreenChange() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                outputTextarea.classList.remove('fullscreen-textarea');
+                outputTextarea.classList.add('main-textarea-inputs');
+                outputTextFinal.classList.remove('fullscreen-textarea');
+                outputTextFinal.classList.add('main-textarea-inputs');
+            }
+        }
+
+        btnOutputTextFullScreen.addEventListener('click', () => {
+            requestFullscreen(outputTextarea);
+            outputTextarea.classList.add('fullscreen-textarea');
+            outputTextarea.classList.remove('main-textarea-inputs');
+        });
+
+        btnOutputTextFinalFullScreen.addEventListener('click', () => {
+            requestFullscreen(outputTextFinal);
+            outputTextFinal.classList.add('fullscreen-textarea');
+            outputTextFinal.classList.remove('main-textarea-inputs');
+        });
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     }
-    
-    btnOutputTextFullScreen.addEventListener('click', () => {
-        requestFullscreen(outputTextarea);
-        outputTextarea.classList.add('fullscreen-textarea');
-        outputTextarea.classList.remove('main-textarea-inputs');
-    });
-    
-    btnOutputTextFinalFullScreen.addEventListener('click', () => {
-        requestFullscreen(outputTextFinal);
-        outputTextFinal.classList.add('fullscreen-textarea');
-        outputTextFinal.classList.remove('main-textarea-inputs');
-    });
-    
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    else {
+        // Just hide the buttons on mobile devices until I can figure out better layout etc... for mobile devices.
+        btnOutputTextFullScreen.classList.add('d-none');
+        btnOutputTextFinalFullScreen.classList.add('d-none');
+    }
+
+
 
     function setupAudioVisualizer(stream) {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
