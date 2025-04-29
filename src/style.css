@@ -63,21 +63,38 @@ body {
 
 .main-textarea-inputs {
   font-family: "Oswald", serif;
-  font-optical-sizing: auto;
   font-weight: 400;
   font-style: normal;
   opacity: 0.8;
   font-size: 1.5rem !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .fullscreen-textarea {
-
   background-color: black;
   color: white;
   font-family: "Oswald", serif;
+  font-weight: 400;
+  font-style: normal;
+  min-height: 100vh;
+  width: 100%;
   font-size: 5rem;
-  padding:50px;
+  padding: 50px;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Optional for smaller screens */
+@media (max-width: 768px) {
+  .fullscreen-textarea {
+    font-size: 8vw; /* Responsive font size  that scales with the viewport width */
+    padding: 30px;
+  }
+}
+
+
 
 .warrenz-label {
   font-family: "Oswald", serif;
