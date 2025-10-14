@@ -21,9 +21,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const translationOptions = document.getElementById("translationOptions");
     const outputLanguageOptions = document.getElementById("outputLanguageOptions");
     const microphoneOptions = document.getElementById("microphoneOptions");
-    const groqAPIKeyInput = document.getElementById('groqAPIKeyInput');
-    const llmPromptInput = document.getElementById('llmPromptInput');
-    const insertDefaultPromptBtn = document.getElementById('insertDefaultPromptBtn');
     const startButton = document.getElementById('startButton');
     const stopButton = document.getElementById('stopButton');
     const outputTextarea = document.getElementById('outputText');
@@ -40,8 +37,6 @@ document.addEventListener('DOMContentLoaded', function () {
     languageOptions.value = localStorage.getItem('language') || "en-US"; // Default language
     translationOptions.value = localStorage.getItem('translationOption') || "noTranslation"; // Default translation
     outputLanguageOptions.value = localStorage.getItem('outputLanguageOption') || "en-US"; // Default output language
-    groqAPIKeyInput.value = localStorage.getItem('groqAPIKey') || "";
-    llmPromptInput.value = localStorage.getItem('llmPrompt') || "";
 
     if (enableVideoBackground.checked) {
         // toggle d-none and d-block classes
@@ -74,12 +69,6 @@ document.addEventListener('DOMContentLoaded', function () {
     outputLanguageOptions.addEventListener('change', saveOutputLanguageOption); // Save translation on input. This means that the translation is saved as soon as it is entered.
     microphoneOptions.addEventListener('change', saveMicrophone); // Save microphone on input. This means that the microphone is saved as soon as it is entered.
 
-    groqAPIKeyInput.addEventListener('input', saveGroqAPIKey); // Save key on input. This means that the key is saved as soon as it is entered.    
-    llmPromptInput.addEventListener('input', saveLLMPrompt); // Save key on input. This means that the key is saved as soon as it is entered.
-    insertDefaultPromptBtn.addEventListener('click', () => {
-        llmPromptInput.value = "Please translate the following text into English fixing any mistakes etc. (with no extra information or explanation)";
-        saveLLMPrompt();
-    });
     startButton.addEventListener('click', startSpeechToText);
     stopButton.addEventListener('click', stopSpeechToText);
 
@@ -111,12 +100,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     function saveTranslationOption() {
         localStorage.translationOption = translationOptions.value;
-    }
-    function saveGroqAPIKey() {
-        localStorage.groqAPIKey = groqAPIKeyInput.value;
-    }
-    function saveLLMPrompt() {
-        localStorage.llmPrompt = llmPromptInput.value;
     }
 
     function setBackgroundVideo() {
@@ -228,23 +211,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         outputTextarea.value += event.result.text + "\r\n";
                         // Scroll to bottom
                         outputTextarea.scrollTop = outputTextarea.scrollHeight;
-                        if (translationOptions.value === "groqTranslation") {
-                            // Call Groq API and get response and append to final output.
-                            callGroqAPI(event.result.text).then(data => {
-                                if (data && data.choices && data.choices[0] && data.choices[0].message) {
-                                    let result = data.choices[0].message.content;
-                                    // Remove <think> tags. Example: <think>好的，我现在需要处理这个</think>
-                                    let cleanedStr = result.replace(/<think>[\s\S]*?<\/think>\s*/, '');
-                                    console.log(cleanedStr);
-
-                                    outputTextFinal.value += cleanedStr + "\r\n";
-                                    // Scroll to bottom
-                                    outputTextFinal.scrollTop = outputTextFinal.scrollHeight;
-                                }
-                            });
-                        }
-
-
                     } else if (event.result.reason == sdk.ResultReason.NoMatch) {
                         outputTextarea.value += "No speech could be recognized...\r\n";
                     }
@@ -299,51 +265,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (audioStream) {
             audioStream.getTracks().forEach(track => track.stop());
             audioStream = null;
-        }
-    }
-    /*
-    I used speech to text to produce the Mandarin Chinese text below. This is from a talk in Taiwan by a Japanese elder speaking Mandarin Chinese. Please fix any mistakes in the transcription because the speaker has a Japanese accent and the speech to text makes mistakes in the transcription. Please make it coherent and flow naturally. Remember this is from a meeting of Jehovah's Witnesses and the topics are often about being a Christian and following Bible principles.
-  Please output just the results in English with no extra information or explanation. Thanks!
-    */
-
-    // Code to use Groq API. 
-    async function callGroqAPI(message) {
-        const groqAPIKey = groqAPIKeyInput.value.trim();
-        if (!groqAPIKey) {
-            alert("Please enter your Groq API Key.");
-            return;
-        }
-        if (llmPromptInput.value.trim() === "") {
-            alert("Please enter your LLM Prompt if you want to use Groq API.");
-            return;
-        }
-
-        try {
-            const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + groqAPIKey,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    'messages': [
-                        { 'role': 'system', 'content': llmPromptInput.value },
-                        { 'role': 'user', 'content': message }
-                    ],
-                    'model': 'gemma2-9b-it',
-                    'temperature': 0.6
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log(data);
-            return data;
-        } catch (error) {
-            console.error('Error:', error);
         }
     }
 
