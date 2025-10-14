@@ -142,10 +142,13 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Caption Sequence Counter: <span id="sequenceDisplay">0</span></label>
-                        <button type="button" id="resetSequence" class="warrenz-button ms-2">Reset</button>
+                        <label class="form-label">Caption Sequence Counter</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="sequenceInput" min="0" step="1" placeholder="0">
+                            <button type="button" id="resetSequence" class="warrenz-button">Reset to 0</button>
+                        </div>
                         <small class="form-text text-muted d-block">
-                            Sequence number for caption ordering. Reset if captions appear out of order.
+                            Sequence number for caption ordering. Set manually or reset if captions appear out of order.
                         </small>
                     </div>
                 </div>

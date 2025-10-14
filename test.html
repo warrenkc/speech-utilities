@@ -119,7 +119,7 @@ NOTE: If you are the host of a Zoom call and you don't see a "CC (Closed Caption
       return content;
     }
 
-    start(){
+    async start(){
       let startStopButton = this.shadowRoot.querySelector('#start-stop');
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -129,6 +129,8 @@ NOTE: If you are the host of a Zoom call and you don't see a "CC (Closed Caption
       }else{
         startStopButton.innerHTML = 'Stop CC';
         startStopButton.classList.add('stop');
+
+        
 
         this.recognition = new SpeechRecognition();
         this.recognition.continuous = true;
@@ -184,9 +186,7 @@ NOTE: If you are the host of a Zoom call and you don't see a "CC (Closed Caption
       return response;
     }
 
-    scrollToBottom(){
-      window.scrollTo(0, document.body.scrollHeight);
-    }
+
   }
 );
     </script>

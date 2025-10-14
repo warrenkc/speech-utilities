@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const microphoneOptions = document.getElementById("microphoneOptions");
     const enableZoomCaptions = document.getElementById("enableZoomCaptions");
     const zoomApiUrlInput = document.getElementById("zoomApiUrl");
-    const sequenceDisplay = document.getElementById("sequenceDisplay");
+    const sequenceInput = document.getElementById("sequenceInput");
     const resetSequenceButton = document.getElementById("resetSequence");
     const microphoneSwitch = document.getElementById('microphoneSwitch');
     const outputTextarea = document.getElementById('outputText');
@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function () {
     zoomApiUrlInput.value = localStorage.getItem('zoomApiUrl') || "";
     captionSequence = parseInt(localStorage.getItem('captionSequence') || '0');
     accumulatedTime = parseInt(localStorage.getItem('accumulatedTime') || '0');
-    updateSequenceDisplay();
+    sequenceInput.value = captionSequence;
     updateTimerDisplay(); // Show accumulated time if any exists
 
     if (enableVideoBackground.checked) {
@@ -89,36 +89,38 @@ document.addEventListener('DOMContentLoaded', function () {
     microphoneOptions.addEventListener('change', saveMicrophone); // Save microphone on input. This means that the microphone is saved as soon as it is entered.
     enableZoomCaptions.addEventListener('change', saveZoomCaptionsSettings);
     zoomApiUrlInput.addEventListener('input', saveZoomCaptionsSettings);
+    sequenceInput.addEventListener('input', saveCaptionSequence);
+    sequenceInput.addEventListener('blur', validateCaptionSequence);
     resetSequenceButton.addEventListener('click', resetSequenceCounter);
     resetTimerBtn.addEventListener('click', resetAccumulatedTimer);
-    
+
     // Full screen modal event listeners
     fullScreenOutputModal.addEventListener('show.bs.modal', syncOutputToModal);
     clearOutputBtn.addEventListener('click', clearAllOutput);
-    
+
     // Add fullscreen functionality to the fullscreen button
     const fullScreenButton = document.querySelector('button[data-bs-target="#fullScreenOutputModal"]');
     if (fullScreenButton) {
         fullScreenButton.addEventListener('click', enterFullScreen);
     }
 
-    
+
     // Add exit fullscreen functionality to the close button
     const closeButton = document.querySelector('#fullScreenOutputModal button[data-bs-dismiss="modal"]');
     if (closeButton) {
         closeButton.addEventListener('click', exitFullScreen);
     }
 
-    
+
 
     // Add escape key listener to exit fullscreen
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape' && document.fullscreenElement) {            
-            exitFullScreen();            
-        }        
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && document.fullscreenElement) {
+            exitFullScreen();
+        }
     });
 
-    microphoneSwitch.addEventListener('change', function() {
+    microphoneSwitch.addEventListener('change', function () {
         if (microphoneSwitch.checked) {
             startSpeechToText();
         } else {
@@ -161,15 +163,33 @@ document.addEventListener('DOMContentLoaded', function () {
         localStorage.zoomApiUrl = zoomApiUrlInput.value;
     }
 
-    function updateSequenceDisplay() {
-        sequenceDisplay.textContent = captionSequence;
+    function saveCaptionSequence() {
+        const value = parseInt(sequenceInput.value);
+        if (!isNaN(value) && value >= 0) {
+            captionSequence = value;
+            localStorage.captionSequence = captionSequence;
+            console.log("Caption sequence set to:", captionSequence);
+        }
+    }
+
+    function validateCaptionSequence() {
+        const value = parseInt(sequenceInput.value);
+        if (isNaN(value) || value < 0) {
+            // Reset to current valid value if invalid input
+            sequenceInput.value = captionSequence;
+            alert("Please enter a valid number (0 or greater) for the caption sequence.");
+        } else {
+            captionSequence = value;
+            localStorage.captionSequence = captionSequence;
+            sequenceInput.value = captionSequence;
+        }
     }
 
     function resetSequenceCounter() {
         captionSequence = 0;
         sequenceInitialized = false; // Reset initialization flag
         localStorage.captionSequence = captionSequence;
-        updateSequenceDisplay();
+        sequenceInput.value = captionSequence;
         console.log("Caption sequence counter reset to 0");
     }
 
@@ -218,9 +238,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function exitFullScreen() {
         // Exit fullscreen if currently in fullscreen mode
-        if (document.fullscreenElement || document.mozFullScreenElement || 
+        if (document.fullscreenElement || document.mozFullScreenElement ||
             document.webkitFullscreenElement || document.msFullscreenElement) {
-            
+
             if (document.exitFullscreen) {
                 document.exitFullscreen();
             } else if (document.mozCancelFullScreen) { // Firefox
@@ -247,14 +267,14 @@ document.addEventListener('DOMContentLoaded', function () {
             clearInterval(timerInterval);
             timerInterval = null;
         }
-        
+
         // Add current session time to accumulated time
         if (timerStartTime) {
             const sessionTime = Date.now() - timerStartTime;
             accumulatedTime += sessionTime;
             localStorage.accumulatedTime = accumulatedTime;
         }
-        
+
         timerStartTime = null;
         updateTimerDisplay(); // Update display with accumulated time
     }
@@ -266,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function () {
             displayTime(totalTime);
         }
     }
-    
+
     function updateTimerDisplay() {
         // Show accumulated time even when not actively recording
         if (accumulatedTime > 0) {
@@ -278,75 +298,35 @@ document.addEventListener('DOMContentLoaded', function () {
             resetTimerBtn.style.display = 'none';
         }
     }
-    
+
     function displayTime(totalMilliseconds) {
         const seconds = Math.floor(totalMilliseconds / 1000);
         const minutes = Math.floor(seconds / 60);
         const hours = Math.floor(minutes / 60);
-        
+
         const displayHours = String(hours).padStart(2, '0');
         const displayMinutes = String(minutes % 60).padStart(2, '0');
         const displaySeconds = String(seconds % 60).padStart(2, '0');
-        
+
         timerDisplay.textContent = `Billable Time: ${displayHours}:${displayMinutes}:${displaySeconds}`;
     }
 
-    // Zoom Caption API Functions
-    async function initializeZoomSequence() {
-        if (!enableZoomCaptions.checked || !zoomApiUrlInput.value.trim() || sequenceInitialized) {
-            return true;
-        }
-
-        try {
-            const zoomApiUrl = zoomApiUrlInput.value.trim();
-            const seqUrl = zoomApiUrl.replace('/closedcaption', '/closedcaption/seq');
-            
-            
-            const options = {
-                method: 'GET',
-                mode: 'no-cors',
-                body: captionText,
-                headers: {
-                    'Content-Type': 'plain/text'
-                }
-            };
-            if (response.ok) {
-                const lastSeq = await response.json();
-                captionSequence = (lastSeq || 0) + 1;
-                localStorage.captionSequence = captionSequence;
-                updateSequenceDisplay();
-                sequenceInitialized = true;
-                console.log(`Zoom sequence initialized to: ${captionSequence}`);
-                return true;
-            } else {
-                console.warn(`Could not fetch Zoom sequence, using stored value: ${response.status}`);
-                sequenceInitialized = true; // Don't retry on error
-                return true;
-            }
-        } catch (error) {
-            console.warn('Could not fetch Zoom sequence, using stored value:', error);
-            sequenceInitialized = true; // Don't retry on error
-            return true;
-        }
-    }
+    
 
     async function sendCaptionToZoom(text) {
         if (!enableZoomCaptions.checked || !zoomApiUrlInput.value.trim()) {
             return false;
         }
 
-        // Initialize sequence from Zoom API if not done yet
-        await initializeZoomSequence();
-
         const zoomApiUrl = zoomApiUrlInput.value.trim();
-        const language = translationOptions.value === "azureTranslation" 
+        const language = translationOptions.value === "azureTranslation"
             ? getZoomLanguageCode(outputLanguageOptions.value)
             : getZoomLanguageCode(languageOptions.value);
 
         try {
             // Add space at the end to prevent Zoom from concatenating captions
             const captionText = text.trim() + ' ';
-            
+
             // Build URL with parameters
             let fullZoomUrl = `${zoomApiUrl}&lang=${language}&seq=${captionSequence}`;
 
@@ -361,11 +341,11 @@ document.addEventListener('DOMContentLoaded', function () {
             };
 
             const response = await fetch(fullZoomUrl, options);
-            
+
             // With no-cors mode, we can't read response details, so assume success
             captionSequence++;
             localStorage.captionSequence = captionSequence;
-            updateSequenceDisplay();
+            sequenceInput.value = captionSequence;
             console.log(`Caption sent to Zoom (seq: ${captionSequence - 1}): ${captionText}`);
             return true;
 
