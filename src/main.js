@@ -303,12 +303,14 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             // Add space at the end to prevent Zoom from concatenating captions
             const captionText = text.trim() + ' ';
-            
+
             const response = await fetch(`${zoomApiUrl}&seq=${captionSequence}&lang=${language}`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'text/plain'
+                    // Must be plain text with UTF-8 encoding
+                    'Content-Type': 'text/plain; charset=utf-8'
                 },
+                // Body must contain only the closed caption text (not form-encoded)
                 body: captionText
             });
 
