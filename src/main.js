@@ -38,6 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let recognizer;
     let audioConfig;
     let captionSequence = 0;
+    let sequenceInitialized = false; // Track if sequence has been initialized from Zoom API
     let timerStartTime = null;
     let timerInterval = null;
     let accumulatedTime = 0; // Total accumulated time in milliseconds
@@ -166,6 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function resetSequenceCounter() {
         captionSequence = 0;
+        sequenceInitialized = false; // Reset initialization flag
         localStorage.captionSequence = captionSequence;
         updateSequenceDisplay();
         console.log("Caption sequence counter reset to 0");
@@ -290,40 +292,79 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Zoom Caption API Functions
+    async function initializeZoomSequence() {
+        if (!enableZoomCaptions.checked || !zoomApiUrlInput.value.trim() || sequenceInitialized) {
+            return true;
+        }
+
+        try {
+            const zoomApiUrl = zoomApiUrlInput.value.trim();
+            const seqUrl = zoomApiUrl.replace('/closedcaption', '/closedcaption/seq');
+            
+            const response = await fetch(seqUrl, {
+                method: 'GET',
+                mode: 'cors'
+            });
+
+            if (response.ok) {
+                const lastSeq = await response.json();
+                captionSequence = (lastSeq || 0) + 1;
+                localStorage.captionSequence = captionSequence;
+                updateSequenceDisplay();
+                sequenceInitialized = true;
+                console.log(`Zoom sequence initialized to: ${captionSequence}`);
+                return true;
+            } else {
+                console.warn(`Could not fetch Zoom sequence, using stored value: ${response.status}`);
+                sequenceInitialized = true; // Don't retry on error
+                return true;
+            }
+        } catch (error) {
+            console.warn('Could not fetch Zoom sequence, using stored value:', error);
+            sequenceInitialized = true; // Don't retry on error
+            return true;
+        }
+    }
+
     async function sendCaptionToZoom(text) {
         if (!enableZoomCaptions.checked || !zoomApiUrlInput.value.trim()) {
             return false;
         }
 
+        // Initialize sequence from Zoom API if not done yet
+        await initializeZoomSequence();
+
         const zoomApiUrl = zoomApiUrlInput.value.trim();
         const language = translationOptions.value === "azureTranslation" 
             ? getZoomLanguageCode(outputLanguageOptions.value)
-            : getZoomLanguageCode(languageOptions.value); // Use output language for translation, input language otherwise
+            : getZoomLanguageCode(languageOptions.value);
 
         try {
             // Add space at the end to prevent Zoom from concatenating captions
             const captionText = text.trim() + ' ';
+            
+            // Build URL with parameters
+            let fullZoomUrl = `${zoomApiUrl}&lang=${language}&seq=${captionSequence}`;
 
-            const response = await fetch(`${zoomApiUrl}&seq=${captionSequence}&lang=${language}`, {
+            const options = {
                 method: 'POST',
+                mode: 'no-cors',
+                body: captionText,
                 headers: {
-                    // Must be plain text with UTF-8 encoding
-                    'Content-Type': 'text/plain; charset=utf-8'
-                },
-                // Body must contain only the closed caption text (not form-encoded)
-                body: captionText
-            });
+                    'Content-Type': 'plain/text',
+                    'Content-Length': captionText.length
+                }
+            };
 
-            if (response.ok) {
-                captionSequence++;
-                localStorage.captionSequence = captionSequence;
-                updateSequenceDisplay();
-                console.log(`Caption sent to Zoom (seq: ${captionSequence - 1}): ${captionText}`);
-                return true;
-            } else {
-                console.error(`Failed to send caption to Zoom: ${response.status} ${response.statusText}`);
-                return false;
-            }
+            const response = await fetch(fullZoomUrl, options);
+            
+            // With no-cors mode, we can't read response details, so assume success
+            captionSequence++;
+            localStorage.captionSequence = captionSequence;
+            updateSequenceDisplay();
+            console.log(`Caption sent to Zoom (seq: ${captionSequence - 1}): ${captionText}`);
+            return true;
+
         } catch (error) {
             console.error('Error sending caption to Zoom:', error);
             return false;
