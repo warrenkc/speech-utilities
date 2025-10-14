@@ -258,13 +258,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const zoomApiUrl = zoomApiUrlInput.value.trim();
         const language = translationOptions.value === "azureTranslation" 
             ? getZoomLanguageCode(outputLanguageOptions.value)
-            : getZoomLanguageCode(languageOptions.value);
+            : getZoomLanguageCode(languageOptions.value); // Use output language for translation, input language otherwise
 
         try {
             // Add space at the end to prevent Zoom from concatenating captions
             const captionText = text.trim() + ' ';
             
-            const response = await fetch(`${zoomApiUrl}?seq=${captionSequence}&lang=${language}`, {
+            const response = await fetch(`${zoomApiUrl}&seq=${captionSequence}&lang=${language}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'text/plain'
