@@ -148,7 +148,7 @@
                             <button type="button" id="resetSequence" class="warrenz-button">Reset to 0</button>
                         </div>
                         <small class="form-text text-muted d-block">
-                            Sequence number for caption ordering. Set manually or reset if captions appear out of order.
+                            Sequence number for Zoom. If this is incorrect, captions will not work properly.
                         </small>
                     </div>
                 </div>
@@ -228,6 +228,7 @@
                     <div class="d-flex align-items-center gap-2">
                         <div id="timerDisplay" class="text-left warrenz-label" style="display: none;">Billable Time: 00:00:00</div>
                         <button type="button" id="resetTimerBtn" class="warrenz-button" style="display: none;">Reset Timer</button>
+                        <button type="button" id="clearOutputTextBtn" class="warrenz-button">Clear Output Text</button>
                     </div>
                     <canvas id="audioVisualizer" height="50" style="flex-shrink: 0;"></canvas>
                 </div>
@@ -244,7 +245,7 @@
                             <i class="bi bi-arrows-fullscreen"></i> Full Screen
                         </button>
                     </div>
-                    <textarea class="form-control shadow main-textarea-inputs" id="outputText" rows="5" readonly
+                    <textarea class="form-control shadow main-textarea-inputs" id="outputText" rows="15" readonly
                         placeholder="Speech to text output will appear here..."></textarea>
 
                 </div>
