@@ -121,6 +121,33 @@
                         </select>
                         <label for="microphoneOptions" class="form-label">Microphone</label>
                     </div>
+                    
+                    <!-- Zoom Caption Integration Settings -->
+                    <hr class="my-4">
+                    <h6 class="mb-3">Zoom Caption Integration</h6>
+                    
+                    <div class="form-floating mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="enableZoomCaptions">
+                            <label class="form-check-label" for="enableZoomCaptions">Enable Zoom Captions</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="zoomApiUrl" placeholder="Enter Zoom API URL with token">
+                        <label for="zoomApiUrl">Zoom Caption API URL</label>
+                        <small class="form-text text-muted">
+                            Copy the API URL from Zoom's "Use a 3rd party CC service" option
+                        </small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Caption Sequence Counter: <span id="sequenceDisplay">0</span></label>
+                        <button type="button" id="resetSequence" class="btn btn-sm btn-outline-warning ms-2">Reset</button>
+                        <small class="form-text text-muted d-block">
+                            Sequence number for caption ordering. Reset if captions appear out of order.
+                        </small>
+                    </div>
                 </div>
 
 
@@ -131,7 +158,7 @@
     <div class="modal fade" id="aboutHelpModal" tabindex="-1" aria-labelledby="aboutHelpModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content shadow">
-                <div class="modal-header">;
+                <div class="modal-header">
                     <h1 class="header" id="aboutHelpModalLabel">About / Help</h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -150,6 +177,26 @@
             </div>
         </div>
     </div>
+    
+    <!-- Full Screen Output Modal -->
+    <div class="modal fade" id="fullScreenOutputModal" tabindex="-1" aria-labelledby="fullScreenOutputModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">                
+                <div class="modal-body p-0">
+                    <div class="mb-3">                        
+                        <textarea class="fullscreen-textarea " id="fullScreenOutputText" rows="6" readonly
+                            placeholder="Speech to text output will appear here..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <!-- <p class="float-start">Press F11 to go full screen</p> -->
+                    <button type="button" id="fullscreenCloseButton" class="warrenz-button" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="warrenz-button" id="clearOutputBtn">Clear Output</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="container mt-1">
         <div class="row justify-content-center">
             <div class="col-12">
@@ -159,48 +206,42 @@
 
 
 
-                <div class="mb-3 d-flex">
-                    <button class="warrenz-button" id="startButton">Start Microphone 🎤</button>
-                    <button class="warrenz-button" id="stopButton" disabled>Stop Microphone ❌</button>
-                    <!-- Button trigger modal -->
-                    <button type="button" class="warrenz-button" data-bs-toggle="modal" data-bs-target="#settingsModal">
-                        Open Settings ⛮</button>
-                    <button type="button" class="warrenz-button" data-bs-toggle="modal"
-                        data-bs-target="#aboutHelpModal">
-                        About / Help 🤨</button>
+                <div class="mb-3 d-flex align-items-center">
+                    <div>
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="warrenz-label" for="microphoneSwitch" style="cursor: pointer;">🎤 Microphone</label>
+                            <input class="tgl tgl-skewed" type="checkbox" id="microphoneSwitch">
+                            <label class="tgl-btn" for="microphoneSwitch" data-tg-off="Off" data-tg-on="On"></label>
+                            
+                        </div>
+                    </div>
+                    <div class="ms-auto d-flex gap-2">
+                        <button type="button" class="warrenz-button" data-bs-toggle="modal" data-bs-target="#settingsModal">Open Settings ⛮</button>
+                        <button type="button" class="warrenz-button" data-bs-toggle="modal" data-bs-target="#aboutHelpModal">About / Help 🤨</button>
+                    </div>
                 </div>
                 <div class="align-items-center">
                     <div id="status" class="text-left warrenz-label">Status: Ready</div>
+                    <div id="timerDisplay" class="text-left warrenz-label" style="display: none;">Billable Time: 00:00:00</div>
                     <canvas id="audioVisualizer" height="50" style="flex-shrink: 0;"></canvas>
                 </div>
                 
-                <div class="mb-5">
+                <div class="mb-2">
                     <label for="outputTextInProgress" class="form-label warrenz-label">Output Text In Progress</label>
                     <textarea class="form-control shadow main-textarea-inputs" id="outputTextInProgress" rows="2"
                         readonly placeholder="Speech to text output will appear here..."></textarea>
                 </div>
-                <div class="mb-5">
-                    <label for="outputText" class="form-label warrenz-label">Output Text</label>
-                   
-                    <button
-                        id="btnOutputTextFullScreen" type="button" class="btn btn-light float-end"><i class="bi bi-arrows-fullscreen"></i>&nbsp;&nbsp;Fullscreen
-                        
-                    </button>
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label for="outputText" class="form-label warrenz-label mb-0">Output Text</label>
+                        <button type="button" class="warrenz-button" data-bs-toggle="modal" data-bs-target="#fullScreenOutputModal">
+                            <i class="bi bi-arrows-fullscreen"></i> Full Screen
+                        </button>
+                    </div>
                     <textarea class="form-control shadow main-textarea-inputs" id="outputText" rows="5" readonly
                         placeholder="Speech to text output will appear here..."></textarea>
 
                 </div>
-                <div class="mb-3">
-                    <label for="outputTextFinal" class="form-label warrenz-label">Final Output Text (After additional
-                        processing)</label><button id="btnOutputTextFinalFullScreen" type="button" class="btn btn-light float-end">
-                            <i class="bi bi-arrows-fullscreen"></i>&nbsp;&nbsp;Fullscreen
-                        
-                        </button>
-                        </button>
-                    <textarea class="form-control shadow main-textarea-inputs" id="outputTextFinal" rows="5" readonly
-                        placeholder="Speech to text output will appear here..."></textarea>
-                </div>
-                
             </div>
         </div>
 
