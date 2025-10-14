@@ -34,11 +34,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const fullScreenOutputText = document.getElementById('fullScreenOutputText');
     const clearOutputBtn = document.getElementById('clearOutputBtn');
     const timerDisplay = document.getElementById('timerDisplay');
+    const resetTimerBtn = document.getElementById('resetTimerBtn');
     let recognizer;
     let audioConfig;
     let captionSequence = 0;
     let timerStartTime = null;
     let timerInterval = null;
+    let accumulatedTime = 0; // Total accumulated time in milliseconds
 
     // Load settings from local storage
     enableVideoBackground.checked = localStorage.getItem('enableVideoBackground') === 'true';
@@ -50,7 +52,9 @@ document.addEventListener('DOMContentLoaded', function () {
     enableZoomCaptions.checked = localStorage.getItem('enableZoomCaptions') === 'true';
     zoomApiUrlInput.value = localStorage.getItem('zoomApiUrl') || "";
     captionSequence = parseInt(localStorage.getItem('captionSequence') || '0');
+    accumulatedTime = parseInt(localStorage.getItem('accumulatedTime') || '0');
     updateSequenceDisplay();
+    updateTimerDisplay(); // Show accumulated time if any exists
 
     if (enableVideoBackground.checked) {
         // toggle d-none and d-block classes
@@ -85,6 +89,7 @@ document.addEventListener('DOMContentLoaded', function () {
     enableZoomCaptions.addEventListener('change', saveZoomCaptionsSettings);
     zoomApiUrlInput.addEventListener('input', saveZoomCaptionsSettings);
     resetSequenceButton.addEventListener('click', resetSequenceCounter);
+    resetTimerBtn.addEventListener('click', resetAccumulatedTimer);
     
     // Full screen modal event listeners
     fullScreenOutputModal.addEventListener('show.bs.modal', syncOutputToModal);
@@ -166,6 +171,15 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log("Caption sequence counter reset to 0");
     }
 
+    function resetAccumulatedTimer() {
+        if (confirm("Are you sure you want to reset the accumulated billable time?")) {
+            accumulatedTime = 0;
+            localStorage.accumulatedTime = accumulatedTime;
+            updateTimerDisplay();
+            console.log("Accumulated timer reset to 0");
+        }
+    }
+
     // Full screen modal functions
     function syncOutputToModal() {
         // Sync the content from main textarea to modal textarea
@@ -221,6 +235,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function startTimer() {
         timerStartTime = Date.now();
         timerDisplay.style.display = 'block';
+        resetTimerBtn.style.display = 'inline-block';
         timerInterval = setInterval(updateTimer, 1000);
         updateTimer(); // Update immediately
     }
@@ -230,23 +245,48 @@ document.addEventListener('DOMContentLoaded', function () {
             clearInterval(timerInterval);
             timerInterval = null;
         }
-        timerDisplay.style.display = 'none';
+        
+        // Add current session time to accumulated time
+        if (timerStartTime) {
+            const sessionTime = Date.now() - timerStartTime;
+            accumulatedTime += sessionTime;
+            localStorage.accumulatedTime = accumulatedTime;
+        }
+        
         timerStartTime = null;
+        updateTimerDisplay(); // Update display with accumulated time
     }
 
     function updateTimer() {
         if (timerStartTime) {
-            const elapsed = Date.now() - timerStartTime;
-            const seconds = Math.floor(elapsed / 1000);
-            const minutes = Math.floor(seconds / 60);
-            const hours = Math.floor(minutes / 60);
-            
-            const displayHours = String(hours).padStart(2, '0');
-            const displayMinutes = String(minutes % 60).padStart(2, '0');
-            const displaySeconds = String(seconds % 60).padStart(2, '0');
-            
-            timerDisplay.textContent = `Billable Time: ${displayHours}:${displayMinutes}:${displaySeconds}`;
+            const currentSessionTime = Date.now() - timerStartTime;
+            const totalTime = accumulatedTime + currentSessionTime;
+            displayTime(totalTime);
         }
+    }
+    
+    function updateTimerDisplay() {
+        // Show accumulated time even when not actively recording
+        if (accumulatedTime > 0) {
+            timerDisplay.style.display = 'block';
+            resetTimerBtn.style.display = 'inline-block';
+            displayTime(accumulatedTime);
+        } else if (!timerStartTime) {
+            timerDisplay.style.display = 'none';
+            resetTimerBtn.style.display = 'none';
+        }
+    }
+    
+    function displayTime(totalMilliseconds) {
+        const seconds = Math.floor(totalMilliseconds / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        
+        const displayHours = String(hours).padStart(2, '0');
+        const displayMinutes = String(minutes % 60).padStart(2, '0');
+        const displaySeconds = String(seconds % 60).padStart(2, '0');
+        
+        timerDisplay.textContent = `Billable Time: ${displayHours}:${displayMinutes}:${displaySeconds}`;
     }
 
     // Zoom Caption API Functions
