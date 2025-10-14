@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const fullScreenOutputModal = document.getElementById('fullScreenOutputModal');
     const fullScreenOutputText = document.getElementById('fullScreenOutputText');
     const clearOutputBtn = document.getElementById('clearOutputBtn');
+    const clearOutputTextBtn = document.getElementById('clearOutputTextBtn');
     const timerDisplay = document.getElementById('timerDisplay');
     const resetTimerBtn = document.getElementById('resetTimerBtn');
     let recognizer;
@@ -93,6 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
     sequenceInput.addEventListener('blur', validateCaptionSequence);
     resetSequenceButton.addEventListener('click', resetSequenceCounter);
     resetTimerBtn.addEventListener('click', resetAccumulatedTimer);
+    clearOutputTextBtn.addEventListener('click', clearAllOutput);
 
     // Full screen modal event listeners
     fullScreenOutputModal.addEventListener('show.bs.modal', syncOutputToModal);
