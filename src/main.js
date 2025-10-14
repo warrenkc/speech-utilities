@@ -7,13 +7,10 @@ import * as sdk from "microsoft-cognitiveservices-speech-sdk";
 
 
 document.addEventListener('DOMContentLoaded', function () {
-<<<<<<< HEAD
-=======
     const visualizerCanvas = document.getElementById('audioVisualizer');
     const vctx = visualizerCanvas.getContext('2d');
     let audioAnalyser, audioStream, freqData;
 
->>>>>>> df7e5879d386f80bdb131709af6705a7e186266a
     const backgroundVideo = document.getElementById('backgroundVideo');
     const enableVideoBackground = document.getElementById('enableVideoBackground');
     const subscriptionKeyInput = document.getElementById('subscriptionKey');
@@ -46,7 +43,6 @@ document.addEventListener('DOMContentLoaded', function () {
     groqAPIKeyInput.value = localStorage.getItem('groqAPIKey') || "";
     llmPromptInput.value = localStorage.getItem('llmPrompt') || "";
 
-<<<<<<< HEAD
     if (enableVideoBackground.checked) {
         // toggle d-none and d-block classes
         backgroundVideo.classList.remove("d-none");
@@ -54,10 +50,8 @@ document.addEventListener('DOMContentLoaded', function () {
     else {
         backgroundVideo.classList.add("d-none");
     }
-=======
     // Set the background video based on the checkbox
     setBackgroundVideo();
->>>>>>> df7e5879d386f80bdb131709af6705a7e186266a
 
     loadInputDevices(); // Load input devices
 
@@ -93,10 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function saveEnableVideoBackground() {
         localStorage.enableVideoBackground = enableVideoBackground.checked;
         console.debug("Enable video background: ", enableVideoBackground.checked);
-<<<<<<< HEAD
-=======
         setBackgroundVideo(); // Update background video visibility
->>>>>>> df7e5879d386f80bdb131709af6705a7e186266a
     }
     function saveKey() {
         localStorage.subscriptionKey = subscriptionKeyInput.value;
