@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    Zoom API Url
+    <input type="text" id="zoomURL" value="https://us02wmcc.zoom.us/closedcaption?id=4026331919&ns=U2lkYW5nIEJhaGFzYSBJbmRvbmVzaWEgVGFpcGVp&expire=108000&sparams=id%2Cns%2Cexpire&signature=_6Vpx9rpr7f8beEftjqlhYBMNr2-R_Gz9Ve0WMIeGCY.AG.oRpRSbdNdXRsVibmjsKjHCdoG9BdVUq4ieYHv3It94jROKh-qmPXVuO48Opqjjrx4Ik8eZ_m0yvgFpGkAdJDZEV-OpHQO5sQIxTIiE2oqpBo2hqz0kVQ5ZP8VF6gMu6drKkY5t4PhyEYU3on1ub2HI9QqMk0Pa1s2gSlmGYZJiqA3I6R8osZOEXFYydSbWWBrZNv63DudCvp1ODkf6ehG9dEraKsVD5KHbxkYOOuoL5N9anw5LhG.CNJiC6aOC_LpDsuCjjnJ_g.YOy8pzGhlH31Azgf" />
+    <button id="getSeq">Get Seq</button>
+    <div id="output"></div>
+    <div id="sequenceDisplay">0</div>
+    <script>
+    const getSeqButton = document.querySelector('#getSeq');
+    const outputDiv = document.querySelector('#output');
+    getSeqButton.onclick = async (event) => {
+        outputDiv.innerHTML = 'Fetching...';
+        await initializeSequence();
+        outputDiv.innerHTML = 'Done';
+    }
+
+    async function initializeSequence()
+    {
+      
+        let zoomURL = document.querySelector('#zoomURL').value;        
+        zoomURL = 'https://corsproxy.io/?key=786252c7&url=' + zoomURL;
+        const baseURL = zoomURL.replace('/closedcaption', '/closedcaption/seq');
+        console.log(`Url used: ${baseURL}`);
+        
+        // Get initial sequence number from Zoom
+        const response = await fetch(baseURL, {
+          method: 'GET',
+          mode: 'no-cors'
+        });
+        
+         
+            console.log(response);
+        
+    }
+
+    </script>
+    
+</body>
+</html>
