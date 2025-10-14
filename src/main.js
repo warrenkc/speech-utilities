@@ -21,14 +21,24 @@ document.addEventListener('DOMContentLoaded', function () {
     const translationOptions = document.getElementById("translationOptions");
     const outputLanguageOptions = document.getElementById("outputLanguageOptions");
     const microphoneOptions = document.getElementById("microphoneOptions");
-    const startButton = document.getElementById('startButton');
-    const stopButton = document.getElementById('stopButton');
+    const enableZoomCaptions = document.getElementById("enableZoomCaptions");
+    const zoomApiUrlInput = document.getElementById("zoomApiUrl");
+    const sequenceDisplay = document.getElementById("sequenceDisplay");
+    const resetSequenceButton = document.getElementById("resetSequence");
+    const microphoneSwitch = document.getElementById('microphoneSwitch');
     const outputTextarea = document.getElementById('outputText');
     const outputTextInProgress = document.getElementById('outputTextInProgress');
     const outputTextFinal = document.getElementById('outputTextFinal');
     const statusDisplay = document.getElementById('status');
+    const fullScreenOutputModal = document.getElementById('fullScreenOutputModal');
+    const fullScreenOutputText = document.getElementById('fullScreenOutputText');
+    const clearOutputBtn = document.getElementById('clearOutputBtn');
+    const timerDisplay = document.getElementById('timerDisplay');
     let recognizer;
     let audioConfig;
+    let captionSequence = 0;
+    let timerStartTime = null;
+    let timerInterval = null;
 
     // Load settings from local storage
     enableVideoBackground.checked = localStorage.getItem('enableVideoBackground') === 'true';
@@ -37,6 +47,10 @@ document.addEventListener('DOMContentLoaded', function () {
     languageOptions.value = localStorage.getItem('language') || "en-US"; // Default language
     translationOptions.value = localStorage.getItem('translationOption') || "noTranslation"; // Default translation
     outputLanguageOptions.value = localStorage.getItem('outputLanguageOption') || "en-US"; // Default output language
+    enableZoomCaptions.checked = localStorage.getItem('enableZoomCaptions') === 'true';
+    zoomApiUrlInput.value = localStorage.getItem('zoomApiUrl') || "";
+    captionSequence = parseInt(localStorage.getItem('captionSequence') || '0');
+    updateSequenceDisplay();
 
     if (enableVideoBackground.checked) {
         // toggle d-none and d-block classes
@@ -68,9 +82,43 @@ document.addEventListener('DOMContentLoaded', function () {
     translationOptions.addEventListener('change', saveTranslationOption); // Save translation on input. This means that the translation is saved as soon as it is entered.
     outputLanguageOptions.addEventListener('change', saveOutputLanguageOption); // Save translation on input. This means that the translation is saved as soon as it is entered.
     microphoneOptions.addEventListener('change', saveMicrophone); // Save microphone on input. This means that the microphone is saved as soon as it is entered.
+    enableZoomCaptions.addEventListener('change', saveZoomCaptionsSettings);
+    zoomApiUrlInput.addEventListener('input', saveZoomCaptionsSettings);
+    resetSequenceButton.addEventListener('click', resetSequenceCounter);
+    
+    // Full screen modal event listeners
+    fullScreenOutputModal.addEventListener('show.bs.modal', syncOutputToModal);
+    clearOutputBtn.addEventListener('click', clearAllOutput);
+    
+    // Add fullscreen functionality to the fullscreen button
+    const fullScreenButton = document.querySelector('button[data-bs-target="#fullScreenOutputModal"]');
+    if (fullScreenButton) {
+        fullScreenButton.addEventListener('click', enterFullScreen);
+    }
 
-    startButton.addEventListener('click', startSpeechToText);
-    stopButton.addEventListener('click', stopSpeechToText);
+    
+    // Add exit fullscreen functionality to the close button
+    const closeButton = document.querySelector('#fullScreenOutputModal button[data-bs-dismiss="modal"]');
+    if (closeButton) {
+        closeButton.addEventListener('click', exitFullScreen);
+    }
+
+    
+
+    // Add escape key listener to exit fullscreen
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && document.fullscreenElement) {            
+            exitFullScreen();            
+        }        
+    });
+
+    microphoneSwitch.addEventListener('change', function() {
+        if (microphoneSwitch.checked) {
+            startSpeechToText();
+        } else {
+            stopSpeechToText();
+        }
+    });
 
     // Save settings to local storage
     function saveEnableVideoBackground() {
@@ -102,6 +150,176 @@ document.addEventListener('DOMContentLoaded', function () {
         localStorage.translationOption = translationOptions.value;
     }
 
+    function saveZoomCaptionsSettings() {
+        localStorage.enableZoomCaptions = enableZoomCaptions.checked;
+        localStorage.zoomApiUrl = zoomApiUrlInput.value;
+    }
+
+    function updateSequenceDisplay() {
+        sequenceDisplay.textContent = captionSequence;
+    }
+
+    function resetSequenceCounter() {
+        captionSequence = 0;
+        localStorage.captionSequence = captionSequence;
+        updateSequenceDisplay();
+        console.log("Caption sequence counter reset to 0");
+    }
+
+    // Full screen modal functions
+    function syncOutputToModal() {
+        // Sync the content from main textarea to modal textarea
+        fullScreenOutputText.value = outputTextarea.value;
+    }
+
+    function updateModalOutput() {
+        // Update modal textarea if modal is open
+        if (fullScreenOutputModal.classList.contains('show')) {
+            fullScreenOutputText.value = outputTextarea.value;
+            fullScreenOutputText.scrollTop = fullScreenOutputText.scrollHeight;
+        }
+    }
+
+    function clearAllOutput() {
+        // Clear all output textareas
+        outputTextarea.value = '';
+        outputTextInProgress.value = '';
+        fullScreenOutputText.value = '';
+    }
+
+    function enterFullScreen() {
+        // Request fullscreen on the document element
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen();
+        } else if (document.documentElement.mozRequestFullScreen) { // Firefox
+            document.documentElement.mozRequestFullScreen();
+        } else if (document.documentElement.webkitRequestFullscreen) { // Chrome, Safari and Opera
+            document.documentElement.webkitRequestFullscreen();
+        } else if (document.documentElement.msRequestFullscreen) { // IE/Edge
+            document.documentElement.msRequestFullscreen();
+        }
+    }
+
+    function exitFullScreen() {
+        // Exit fullscreen if currently in fullscreen mode
+        if (document.fullscreenElement || document.mozFullScreenElement || 
+            document.webkitFullscreenElement || document.msFullscreenElement) {
+            
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.mozCancelFullScreen) { // Firefox
+                document.mozCancelFullScreen();
+            } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) { // IE/Edge
+                document.msExitFullscreen();
+            }
+        }
+    }
+
+    // Timer functions
+    function startTimer() {
+        timerStartTime = Date.now();
+        timerDisplay.style.display = 'block';
+        timerInterval = setInterval(updateTimer, 1000);
+        updateTimer(); // Update immediately
+    }
+
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        timerDisplay.style.display = 'none';
+        timerStartTime = null;
+    }
+
+    function updateTimer() {
+        if (timerStartTime) {
+            const elapsed = Date.now() - timerStartTime;
+            const seconds = Math.floor(elapsed / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            
+            const displayHours = String(hours).padStart(2, '0');
+            const displayMinutes = String(minutes % 60).padStart(2, '0');
+            const displaySeconds = String(seconds % 60).padStart(2, '0');
+            
+            timerDisplay.textContent = `Billable Time: ${displayHours}:${displayMinutes}:${displaySeconds}`;
+        }
+    }
+
+    // Zoom Caption API Functions
+    async function sendCaptionToZoom(text) {
+        if (!enableZoomCaptions.checked || !zoomApiUrlInput.value.trim()) {
+            return false;
+        }
+
+        const zoomApiUrl = zoomApiUrlInput.value.trim();
+        const language = translationOptions.value === "azureTranslation" 
+            ? getZoomLanguageCode(outputLanguageOptions.value)
+            : getZoomLanguageCode(languageOptions.value);
+
+        try {
+            // Add space at the end to prevent Zoom from concatenating captions
+            const captionText = text.trim() + ' ';
+            
+            const response = await fetch(`${zoomApiUrl}?seq=${captionSequence}&lang=${language}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain'
+                },
+                body: captionText
+            });
+
+            if (response.ok) {
+                captionSequence++;
+                localStorage.captionSequence = captionSequence;
+                updateSequenceDisplay();
+                console.log(`Caption sent to Zoom (seq: ${captionSequence - 1}): ${captionText}`);
+                return true;
+            } else {
+                console.error(`Failed to send caption to Zoom: ${response.status} ${response.statusText}`);
+                return false;
+            }
+        } catch (error) {
+            console.error('Error sending caption to Zoom:', error);
+            return false;
+        }
+    }
+
+    // Convert Azure language codes to Zoom-compatible codes
+    function getZoomLanguageCode(azureLanguage) {
+        const languageMap = {
+            'en-US': 'en-US',
+            'id-ID': 'id',
+            'es-ES': 'es',
+            'ja-JP': 'ja',
+            'zh-TW': 'zh-CN',
+            'zh-Hant': 'zh-CN',
+            'en': 'en-US',
+            'id': 'id',
+            'es': 'es',
+            'ja': 'ja'
+        };
+        return languageMap[azureLanguage] || 'en-US';
+    }
+
+    // Status update functions
+    function updateMainStatus(mainStatus, zoomStatus = null) {
+        let statusText = `Status: ${mainStatus}`;
+        if (enableZoomCaptions.checked && zoomStatus) {
+            statusText += ` | Zoom: ${zoomStatus}`;
+        }
+        statusDisplay.textContent = statusText;
+    }
+
+    function updateZoomStatus(zoomStatus) {
+        const currentStatus = statusDisplay.textContent;
+        const mainStatus = currentStatus.split(' | ')[0];
+        updateMainStatus(mainStatus.replace('Status: ', ''), zoomStatus);
+    }
+
     function setBackgroundVideo() {
         if (enableVideoBackground.checked) {
             // toggle d-none and d-block classes
@@ -131,22 +349,34 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function startSpeechToText() {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioStream = stream;
-        setupAudioVisualizer(stream);
-        startButton.disabled = true;
-        stopButton.disabled = false;
+
+        microphoneSwitch.disabled = true; // Prevent toggling while starting
         outputTextarea.value = ""; // Clear previous output
-        statusDisplay.textContent = "Initializing...";
+        outputTextInProgress.value = ""; // Clear in-progress text
+        // Clear modal textarea as well
+        fullScreenOutputText.value = "";
+        updateMainStatus("Initializing");
 
         const subscriptionKey = subscriptionKeyInput.value.trim();
         const region = regionOptions.value.trim();
 
         if (!subscriptionKey || !region) {
             alert("Please enter your Azure Subscription Key and Region.");
-            startButton.disabled = false;
-            stopButton.disabled = true;
-            statusDisplay.textContent = "Status: Ready";
+            microphoneSwitch.checked = false;
+            microphoneSwitch.disabled = false;
+            updateMainStatus("Ready");
+            return;
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioStream = stream;
+        setupAudioVisualizer(stream);
+
+        // Validate Zoom settings if enabled
+        if (enableZoomCaptions.checked && !zoomApiUrlInput.value.trim()) {
+            alert("Please enter a Zoom Caption API URL or disable Zoom captions.");
+            microphoneSwitch.checked = false;
+            microphoneSwitch.disabled = false;
+            updateMainStatus("Ready");
             return;
         }
 
@@ -173,7 +403,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             console.log("recognizer: ", recognizer);
 
-            statusDisplay.textContent = "Status: Listening...";
+            updateMainStatus("Listening", enableZoomCaptions.checked ? "Ready" : null);
+            microphoneSwitch.disabled = false; // Re-enable the switch now that it's started
+            startTimer(); // Start the billable time timer
 
             recognizer.recognizing = (s, event) => {
                 // Intermediate result (while speaking) - applies to both translation and non-translation
@@ -187,9 +419,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 } else {
                     outputTextInProgress.value = event.result.text;
                 }
+                // Update modal if it's open (only for complete output, not in-progress)
             };
 
-            recognizer.recognized = (s, event) => {
+            recognizer.recognized = async (s, event) => {
+                let captionText = "";
 
                 if (translationOptions.value === "azureTranslation") {
                     console.log("Recognized - azureTranslation", event);
@@ -198,35 +432,61 @@ document.addEventListener('DOMContentLoaded', function () {
                         // Access the translation
                         console.log("event.result.translations: ", event.result.translations);
                         const translation = event.result.translations.get(outputLanguageOptions.value);
+                        captionText = translation;
                         outputTextarea.value += translation + "\r\n";
                         // Scroll to bottom
                         outputTextarea.scrollTop = outputTextarea.scrollHeight;
+                        // Update modal if it's open
+                        updateModalOutput();
                     } else if (event.result.reason == sdk.ResultReason.RecognizedSpeech) {
+                        captionText = event.result.text;
                         outputTextarea.value += event.result.text + " (No translation available)\r\n";
                         // Scroll to bottom
                         outputTextarea.scrollTop = outputTextarea.scrollHeight;
+                        // Update modal if it's open
+                        updateModalOutput();
                     }
                 } else { //Original no translation code
                     if (event.result.reason == sdk.ResultReason.RecognizedSpeech) {
+                        captionText = event.result.text;
                         outputTextarea.value += event.result.text + "\r\n";
                         // Scroll to bottom
                         outputTextarea.scrollTop = outputTextarea.scrollHeight;
+                        // Update modal if it's open
+                        updateModalOutput();
                     } else if (event.result.reason == sdk.ResultReason.NoMatch) {
                         outputTextarea.value += "No speech could be recognized...\r\n";
+                        // Update modal if it's open
+                        updateModalOutput();
+                    }
+                }
+
+                // Clear the in-progress text after recognition is complete
+                outputTextInProgress.value = "";
+
+                // Send caption to Zoom if text was recognized and Zoom captions are enabled
+                if (captionText && captionText.trim()) {
+                    const success = await sendCaptionToZoom(captionText);
+                    if (success) {
+                        updateZoomStatus("Caption sent");
+                    } else if (enableZoomCaptions.checked) {
+                        updateZoomStatus("Caption failed");
                     }
                 }
             };
 
             recognizer.sessionStopped = (s, event) => {
                 console.log("\n    Session stopped event.");
+                microphoneSwitch.checked = false; // Reset switch state
                 stopSpeechToText(); // Automatically stop after session ends
             };
 
             recognizer.canceled = (s, event) => {
                 console.log(`Recognition canceled. Reason: ${event.reason}`);
                 if (event.reason == sdk.CancellationReason.Error) {
-                    statusDisplay.textContent = `Status: ERROR: ${event.errorDetails}`;
+                    updateMainStatus(`ERROR: ${event.errorDetails}`);
                 }
+                microphoneSwitch.checked = false; // Reset switch state
                 stopSpeechToText(); // Stop on cancellation as well
             };
 
@@ -234,16 +494,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } catch (error) {
             console.error("Error initializing speech recognition:", error);
-            statusDisplay.textContent = `Status: Error: ${error.message}`;
-            startButton.disabled = false;
-            stopButton.disabled = true;
+            updateMainStatus(`Error: ${error.message}`);
+            microphoneSwitch.checked = false;
+            microphoneSwitch.disabled = false;
+            stopTimer(); // Stop timer in case of initialization error
         }
     }
 
     function stopSpeechToText() {
-        startButton.disabled = false;
-        stopButton.disabled = true;
-        statusDisplay.textContent = "Status: Stopping...";
+        microphoneSwitch.disabled = true; // Prevent toggling while stopping
+        updateMainStatus("Stopping");
+        stopTimer(); // Stop the billable time timer
 
         if (recognizer && recognizer.stopContinuousRecognitionAsync) {
             recognizer.stopContinuousRecognitionAsync(
@@ -251,75 +512,24 @@ document.addEventListener('DOMContentLoaded', function () {
                     recognizer.close();
                     recognizer = undefined;
                     audioConfig = undefined;
-                    statusDisplay.textContent = "Status: Ready";
+                    updateMainStatus("Ready");
+                    microphoneSwitch.disabled = false;
                 },
                 error => {
                     console.error("Error stopping speech recognition:", error);
-                    statusDisplay.textContent = `Status: Error stopping: ${error.message}`;
-                    statusDisplay.textContent = "Status: Ready"; // Still set to ready state after error
+                    updateMainStatus("Ready"); // Still set to ready state after error
+                    microphoneSwitch.disabled = false;
                 }
             );
         } else {
-            statusDisplay.textContent = "Status: Ready"; // If recognizer wasn't started
+            updateMainStatus("Ready"); // If recognizer wasn't started
+            microphoneSwitch.disabled = false;
         }
         if (audioStream) {
             audioStream.getTracks().forEach(track => track.stop());
             audioStream = null;
         }
     }
-
-    const btnOutputTextFullScreen = document.getElementById('btnOutputTextFullScreen');
-    const btnOutputTextFinalFullScreen = document.getElementById('btnOutputTextFinalFullScreen');
-
-    function isMobileDevice() {
-        return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    }
-
-    if (isMobileDevice() === false) {
-
-        function requestFullscreen(element) {
-            if (element.requestFullscreen) {
-                element.requestFullscreen();
-            } else if (element.webkitRequestFullscreen) {
-                element.webkitRequestFullscreen();
-            } else if (element.mozRequestFullScreen) {
-                element.mozRequestFullScreen();
-            } else if (element.msRequestFullscreen) {
-                element.msRequestFullscreen();
-            }
-        }
-
-        function handleFullscreenChange() {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                outputTextarea.classList.remove('fullscreen-textarea');
-                outputTextarea.classList.add('main-textarea-inputs');
-                outputTextFinal.classList.remove('fullscreen-textarea');
-                outputTextFinal.classList.add('main-textarea-inputs');
-            }
-        }
-
-        btnOutputTextFullScreen.addEventListener('click', () => {
-            requestFullscreen(outputTextarea);
-            outputTextarea.classList.add('fullscreen-textarea');
-            outputTextarea.classList.remove('main-textarea-inputs');
-        });
-
-        btnOutputTextFinalFullScreen.addEventListener('click', () => {
-            requestFullscreen(outputTextFinal);
-            outputTextFinal.classList.add('fullscreen-textarea');
-            outputTextFinal.classList.remove('main-textarea-inputs');
-        });
-
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    }
-    else {
-        // Just hide the buttons on mobile devices until I can figure out better layout etc... for mobile devices.
-        btnOutputTextFullScreen.classList.add('d-none');
-        btnOutputTextFinalFullScreen.classList.add('d-none');
-    }
-
-
 
     function setupAudioVisualizer(stream) {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
