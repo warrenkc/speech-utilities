@@ -301,11 +301,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const zoomApiUrl = zoomApiUrlInput.value.trim();
             const seqUrl = zoomApiUrl.replace('/closedcaption', '/closedcaption/seq');
             
-            const response = await fetch(seqUrl, {
+            
+            const options = {
                 method: 'GET',
-                mode: 'cors'
-            });
-
+                mode: 'no-cors',
+                body: captionText,
+                headers: {
+                    'Content-Type': 'plain/text'
+                }
+            };
             if (response.ok) {
                 const lastSeq = await response.json();
                 captionSequence = (lastSeq || 0) + 1;
