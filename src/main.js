@@ -436,7 +436,14 @@ document.addEventListener('DOMContentLoaded', function () {
             updateMainStatus("Ready");
             return;
         }
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        // Get the selected microphone device ID
+        const selectedMicrophoneId = microphoneOptions.value;
+        const audioConstraints = selectedMicrophoneId && selectedMicrophoneId !== 'default'
+            ? { audio: { deviceId: { exact: selectedMicrophoneId } } }
+            : { audio: true };
+
+        const stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
         audioStream = stream;
         setupAudioVisualizer(stream);
 
@@ -460,7 +467,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             speechConfig.speechRecognitionLanguage = languageOptions.value;
-            audioConfig = sdk.AudioConfig.fromMicrophoneInput(microphoneOptions.value);
+            audioConfig = sdk.AudioConfig.fromStreamInput(stream);
 
             // Use TranslationRecognizer for translation, SpeechRecognizer otherwise
 
