@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const clearOutputTextBtn = document.getElementById('clearOutputTextBtn');
     const timerDisplay = document.getElementById('timerDisplay');
     const resetTimerBtn = document.getElementById('resetTimerBtn');
+    const settingsSavedStatus = document.getElementById('settingsSavedStatus');
     let recognizer;
     let audioConfig;
     let captionSequence = 0;
@@ -43,6 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let timerStartTime = null;
     let timerInterval = null;
     let accumulatedTime = 0; // Total accumulated time in milliseconds
+    let settingsSavedTimeout = null; // Track timeout for settings saved message
 
     // Load settings from local storage
     enableVideoBackground.checked = localStorage.getItem('enableVideoBackground') === 'true';
@@ -123,39 +125,65 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    // Helper function to show "Saved" message in settings modal
+    function showSettingsSavedMessage() {
+        if (settingsSavedStatus) {
+            // Clear any existing timeout
+            if (settingsSavedTimeout) {
+                clearTimeout(settingsSavedTimeout);
+            }
+            
+            // Show the message
+            settingsSavedStatus.style.display = 'block';
+            
+            // Hide after 2 seconds
+            settingsSavedTimeout = setTimeout(() => {
+                settingsSavedStatus.style.display = 'none';
+            }, 2000);
+        }
+    }
+
     // Save settings to local storage
     function saveEnableVideoBackground() {
         localStorage.enableVideoBackground = enableVideoBackground.checked;
         console.debug("Enable video background: ", enableVideoBackground.checked);
         setBackgroundVideo(); // Update background video visibility
+        showSettingsSavedMessage();
     }
     function saveKey() {
         localStorage.subscriptionKey = subscriptionKeyInput.value;
+        showSettingsSavedMessage();
     }
     function saveRegion() {
         console.debug("Region: ", regionOptions.value);
         localStorage.region = regionOptions.value;
+        showSettingsSavedMessage();
     }
     function saveLanguage() {
         console.debug("Language: ", languageOptions.value);
         localStorage.language = languageOptions.value;
+        showSettingsSavedMessage();
     }
 
     function saveOutputLanguageOption() {
         localStorage.outputLanguageOption = outputLanguageOptions.value;
+        showSettingsSavedMessage();
     }
 
     function saveMicrophone() {
         console.debug("Microphone: ", microphoneOptions.value);
         localStorage.microphone = microphoneOptions.value;
+        showSettingsSavedMessage();
     }
     function saveTranslationOption() {
         localStorage.translationOption = translationOptions.value;
+        showSettingsSavedMessage();
     }
 
     function saveZoomCaptionsSettings() {
         localStorage.enableZoomCaptions = enableZoomCaptions.checked;
         localStorage.zoomApiUrl = zoomApiUrlInput.value;
+        showSettingsSavedMessage();
     }
 
     function saveCaptionSequence() {
@@ -164,6 +192,7 @@ document.addEventListener('DOMContentLoaded', function () {
             captionSequence = value;
             localStorage.captionSequence = captionSequence;
             console.log("Caption sequence set to:", captionSequence);
+            showSettingsSavedMessage();
         }
     }
 
