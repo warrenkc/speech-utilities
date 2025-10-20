@@ -68,15 +68,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Set the background video based on the checkbox
     setBackgroundVideo();
 
-    loadInputDevices(); // Load input devices
+    loadInputDevices(); // Load input devices (includes restoring saved selection)
 
-
-    const storedMicrophone = localStorage.getItem('microphone');
-    if (storedMicrophone && Array.from(microphoneOptions.options).some(option => option.value === storedMicrophone)) {
-        microphoneOptions.value = storedMicrophone;
-    } else {
-        microphoneOptions.value = "default"; // Default microphone
-    }
     enableVideoBackground.addEventListener('change', saveEnableVideoBackground); // Save video background setting on change
     subscriptionKeyInput.addEventListener('input', saveKey); // Save key on input. This means that the key is saved as soon as it is entered.
     btnShowSubscriptionKey.addEventListener('click', () => {
@@ -411,6 +404,16 @@ document.addEventListener('DOMContentLoaded', function () {
                     option.text = device.label || `Microphone ${microphoneOptions.length + 1}`;
                     microphoneOptions.appendChild(option);
                 });
+                
+                // After loading devices, restore the saved microphone selection
+                const storedMicrophone = localStorage.getItem('microphone');
+                if (storedMicrophone && Array.from(microphoneOptions.options).some(option => option.value === storedMicrophone)) {
+                    microphoneOptions.value = storedMicrophone;
+                    console.log("Restored microphone selection:", storedMicrophone);
+                } else if (microphoneOptions.options.length > 0) {
+                    // If no valid stored value, select the first available device
+                    microphoneOptions.value = microphoneOptions.options[0].value;
+                }
             })
             .catch(error => {
                 console.error("Error getting input devices: ", error);
