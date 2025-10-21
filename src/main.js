@@ -356,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const options = {
                 method: 'POST',
-                mode: 'no-cors',
+                // mode: 'no-cors',
                 body: captionText,
                 headers: {
                     'Content-Type': 'plain/text',
@@ -365,8 +365,6 @@ document.addEventListener('DOMContentLoaded', function () {
             };
 
             const response = await fetch(fullZoomUrl, options);
-
-            // With no-cors mode, we can't read response details, so assume success
             captionSequence++;
             localStorage.captionSequence = captionSequence;
             sequenceInput.value = captionSequence;
