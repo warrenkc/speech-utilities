@@ -20,7 +20,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const languageOptions = document.getElementById("languageOptions");
     const translationOptions = document.getElementById("translationOptions");
     const outputLanguageOptions = document.getElementById("outputLanguageOptions");
+    const audioSourceOptions = document.getElementById("audioSourceOptions");
     const microphoneOptions = document.getElementById("microphoneOptions");
+    const microphoneSection = document.getElementById("microphoneSection");
+    const screenCaptureSection = document.getElementById("screenCaptureSection");
     const enableZoomCaptions = document.getElementById("enableZoomCaptions");
     const zoomApiUrlInput = document.getElementById("zoomApiUrl");
     const sequenceInput = document.getElementById("sequenceInput");
@@ -53,6 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
     languageOptions.value = localStorage.getItem('language') || "en-US"; // Default language
     translationOptions.value = localStorage.getItem('translationOption') || "noTranslation"; // Default translation
     outputLanguageOptions.value = localStorage.getItem('outputLanguageOption') || "en-US"; // Default output language
+    audioSourceOptions.value = localStorage.getItem('audioSource') || "microphone"; // Default audio source
     enableZoomCaptions.checked = localStorage.getItem('enableZoomCaptions') === 'true';
     zoomApiUrlInput.value = localStorage.getItem('zoomApiUrl') || "";
     captionSequence = parseInt(localStorage.getItem('captionSequence') || '0');
@@ -69,6 +73,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     // Set the background video based on the checkbox
     setBackgroundVideo();
+    toggleAudioSourceUI(); // Show/hide appropriate UI based on saved selection
 
     loadInputDevices(); // Load input devices (includes restoring saved selection)
 
@@ -82,6 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
     languageOptions.addEventListener('change', saveLanguage); // Save language on input. This means that the language is saved as soon as it is entered.
     translationOptions.addEventListener('change', saveTranslationOption); // Save translation on input. This means that the translation is saved as soon as it is entered.
     outputLanguageOptions.addEventListener('change', saveOutputLanguageOption); // Save translation on input. This means that the translation is saved as soon as it is entered.
+    audioSourceOptions.addEventListener('change', saveAudioSource); // Save audio source on change
     microphoneOptions.addEventListener('change', saveMicrophone); // Save microphone on input. This means that the microphone is saved as soon as it is entered.
     enableZoomCaptions.addEventListener('change', saveZoomCaptionsSettings);
     zoomApiUrlInput.addEventListener('input', saveZoomCaptionsSettings);
@@ -170,6 +176,13 @@ document.addEventListener('DOMContentLoaded', function () {
         showSettingsSavedMessage();
     }
 
+    function saveAudioSource() {
+        localStorage.audioSource = audioSourceOptions.value;
+        toggleAudioSourceUI();
+        console.debug("Audio source: ", audioSourceOptions.value);
+        showSettingsSavedMessage();
+    }
+
     function saveMicrophone() {
         console.debug("Microphone: ", microphoneOptions.value);
         localStorage.microphone = microphoneOptions.value;
@@ -178,6 +191,16 @@ document.addEventListener('DOMContentLoaded', function () {
     function saveTranslationOption() {
         localStorage.translationOption = translationOptions.value;
         showSettingsSavedMessage();
+    }
+
+    function toggleAudioSourceUI() {
+        if (audioSourceOptions.value === 'screenCapture') {
+            microphoneSection.classList.add('d-none');
+            screenCaptureSection.classList.remove('d-none');
+        } else {
+            microphoneSection.classList.remove('d-none');
+            screenCaptureSection.classList.add('d-none');
+        }
     }
 
     function saveZoomCaptionsSettings() {
@@ -356,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const options = {
                 method: 'POST',
-                // mode: 'no-cors',
+                mode: 'no-cors',
                 body: captionText,
                 headers: {
                     'Content-Type': 'plain/text',
@@ -467,16 +490,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Get the selected microphone device ID
-        const selectedMicrophoneId = microphoneOptions.value;
-        const audioConstraints = selectedMicrophoneId && selectedMicrophoneId !== 'default'
-            ? { audio: { deviceId: { exact: selectedMicrophoneId } } }
-            : { audio: true };
-
-        const stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
-        audioStream = stream;
-        setupAudioVisualizer(stream);
-
         // Validate Zoom settings if enabled
         if (enableZoomCaptions.checked && !zoomApiUrlInput.value.trim()) {
             alert("Please enter a Zoom Caption API URL or disable Zoom captions.");
@@ -487,6 +500,114 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         try {
+            // Get audio stream based on selected source
+            let stream;
+            if (audioSourceOptions.value === 'screenCapture') {
+                // Request screen capture with system audio
+                try {
+                    updateMainStatus("Waiting for screen selection...");
+                    
+                    stream = await navigator.mediaDevices.getDisplayMedia({
+                        video: true,
+                        audio: {
+                            echoCancellation: false,
+                            noiseSuppression: false,
+                            autoGainControl: false,
+                            sampleRate: 44100
+                        }
+                    });
+                    
+                    // Extract only audio track
+                    const audioTracks = stream.getAudioTracks();
+                    const videoTracks = stream.getVideoTracks();
+                    
+                    if (audioTracks.length === 0) {
+                        // Stop video tracks
+                        videoTracks.forEach(track => track.stop());
+                        
+                        // Provide more detailed error message based on what was shared
+                        const videoTrack = videoTracks[0];
+                        const displaySurface = videoTrack?.getSettings()?.displaySurface;
+                        
+                        let errorMessage = "No audio track available.\n\n";
+                        
+                        if (displaySurface === 'monitor') {
+                            errorMessage += "System-wide screen capture audio is not supported on macOS and some browsers.\n\n" +
+                                          "Please try one of these alternatives:\n" +
+                                          "• Share a specific browser tab (with 'Share tab audio' enabled)\n" +
+                                          "• Share a specific application window (on Windows)\n" +
+                                          "• Use virtual audio routing software like BlackHole (Mac) or VB-Cable (Windows)\n" +
+                                          "• Switch to Microphone mode and use system audio loopback";
+                        } else if (displaySurface === 'window') {
+                            errorMessage += "Window sharing may not support audio on your system.\n\n" +
+                                          "Please try:\n" +
+                                          "• Share a browser tab instead (with 'Share tab audio' enabled)\n" +
+                                          "• Use virtual audio routing software";
+                        } else {
+                            errorMessage += "Make sure to check 'Share system audio' or 'Share tab audio' in the browser dialog.\n\n" +
+                                          "If the option is not available:\n" +
+                                          "• Try sharing a browser tab instead of screen/window\n" +
+                                          "• Use virtual audio routing software";
+                        }
+                        
+                        alert(errorMessage);
+                        console.log("Display surface type:", displaySurface);
+                        
+                        microphoneSwitch.checked = false;
+                        microphoneSwitch.disabled = false;
+                        updateMainStatus("Ready");
+                        return;
+                    }
+                    
+                    // Stop video track as we only need audio
+                    videoTracks.forEach(track => track.stop());
+                    
+                    // Create new stream with only audio
+                    stream = new MediaStream(audioTracks);
+                    
+                    // Log what type of capture was successful
+                    const audioTrack = audioTracks[0];
+                    console.log("Screen capture audio stream created successfully");
+                    console.log("Audio track settings:", audioTrack.getSettings());
+                    
+                } catch (error) {
+                    console.error("Error getting screen capture:", error);
+                    
+                    let errorMessage = "Failed to get screen capture.\n\n";
+                    if (error.name === 'NotAllowedError') {
+                        errorMessage += "Permission was denied. Please allow screen sharing when prompted.";
+                    } else if (error.name === 'NotFoundError') {
+                        errorMessage += "No screen sharing source was selected.";
+                    } else {
+                        errorMessage += "Error: " + error.message;
+                    }
+                    
+                    alert(errorMessage);
+                    microphoneSwitch.checked = false;
+                    microphoneSwitch.disabled = false;
+                    updateMainStatus("Ready");
+                    return;
+                }
+            } else {
+                // Use microphone
+                const selectedMicrophoneId = microphoneOptions.value;
+                const audioConstraints = selectedMicrophoneId && selectedMicrophoneId !== 'default'
+                    ? { audio: { deviceId: { exact: selectedMicrophoneId } } }
+                    : { audio: true };
+                stream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+            }
+
+            audioStream = stream;
+            setupAudioVisualizer(stream);
+
+            // Add event listener to detect when screen sharing is stopped
+            if (audioSourceOptions.value === 'screenCapture') {
+                stream.getAudioTracks()[0].addEventListener('ended', () => {
+                    console.log("Screen capture stopped by user");
+                    microphoneSwitch.checked = false;
+                    stopSpeechToText();
+                });
+            }
             // Use SpeechTranslationConfig for translation, SpeechConfig otherwise
             let speechConfig;
             if (translationOptions.value === "azureTranslation") {
