@@ -121,10 +121,32 @@
                     </div>
 
                     <div class="form-floating mb-3">
+                        <select class="form-select" id="audioSourceOptions">
+                            <option value="microphone">Microphone</option>
+                            <option value="screenCapture">Screen Capture (System Audio)</option>
+                        </select>
+                        <label for="audioSourceOptions">Audio Source</label>
+                        <small class="form-text text-muted d-block">
+                            Choose between microphone input or system audio from screen capture.
+                        </small>
+                    </div>
+
+                    <div class="form-floating mb-3" id="microphoneSection">
                         <!-- Select input device such as which microphone to use. -->
                         <select id="microphoneOptions" class="form-select mb-1">
                         </select>
                         <label for="microphoneOptions" class="form-label">Microphone</label>
+                    </div>
+
+                    <div id="screenCaptureSection" class="alert alert-info d-none">
+                        <strong>Screen Capture Mode:</strong>
+                        <p class="mb-2">When you start recording, you'll be prompted to select what to share:</p>
+                        <ul class="mb-2">
+                            <li><strong>Browser Tab (Recommended):</strong> Check "Share tab audio" - works on all systems</li>
+                            <li><strong>Application Window:</strong> May work on Windows, limited on macOS</li>
+                            <li><strong>Entire Screen:</strong> Not supported on macOS, limited on other systems</li>
+                        </ul>
+                        <p class="mb-0"><small><strong>Note:</strong> For system-wide audio capture on macOS, use virtual audio routing software like <a href="https://existential.audio/blackhole/" target="_blank">BlackHole</a> with Microphone mode instead.</small></p>
                     </div>
                     
                     <!-- Zoom Caption Integration Settings -->
