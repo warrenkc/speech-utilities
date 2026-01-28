@@ -138,10 +138,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (settingsSavedTimeout) {
                 clearTimeout(settingsSavedTimeout);
             }
-            
+
             // Show the message
             settingsSavedStatus.style.display = 'block';
-            
+
             // Hide after 2 seconds
             settingsSavedTimeout = setTimeout(() => {
                 settingsSavedStatus.style.display = 'none';
@@ -358,7 +358,7 @@ document.addEventListener('DOMContentLoaded', function () {
         timerDisplay.textContent = `Billable Time: ${displayHours}:${displayMinutes}:${displaySeconds}`;
     }
 
-    
+
 
     async function sendCaptionToZoom(text) {
         if (!enableZoomCaptions.checked || !zoomApiUrlInput.value.trim()) {
@@ -409,10 +409,12 @@ document.addEventListener('DOMContentLoaded', function () {
             'ja-JP': 'ja',
             'zh-TW': 'zh-CN',
             'zh-Hant': 'zh-CN',
+            'ko-KR': 'ko',
             'en': 'en-US',
             'id': 'id',
             'es': 'es',
-            'ja': 'ja'
+            'ja': 'ja',
+            'ko': 'ko'
         };
         return languageMap[azureLanguage] || 'en-US';
     }
@@ -454,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     option.text = device.label || `Microphone ${microphoneOptions.length + 1}`;
                     microphoneOptions.appendChild(option);
                 });
-                
+
                 // After loading devices, restore the saved microphone selection
                 const storedMicrophone = localStorage.getItem('microphone');
                 if (storedMicrophone && Array.from(microphoneOptions.options).some(option => option.value === storedMicrophone)) {
@@ -506,7 +508,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Request screen capture with system audio
                 try {
                     updateMainStatus("Waiting for screen selection...");
-                    
+
                     stream = await navigator.mediaDevices.getDisplayMedia({
                         video: true,
                         audio: {
@@ -516,63 +518,63 @@ document.addEventListener('DOMContentLoaded', function () {
                             sampleRate: 44100
                         }
                     });
-                    
+
                     // Extract only audio track
                     const audioTracks = stream.getAudioTracks();
                     const videoTracks = stream.getVideoTracks();
-                    
+
                     if (audioTracks.length === 0) {
                         // Stop video tracks
                         videoTracks.forEach(track => track.stop());
-                        
+
                         // Provide more detailed error message based on what was shared
                         const videoTrack = videoTracks[0];
                         const displaySurface = videoTrack?.getSettings()?.displaySurface;
-                        
+
                         let errorMessage = "No audio track available.\n\n";
-                        
+
                         if (displaySurface === 'monitor') {
                             errorMessage += "System-wide screen capture audio is not supported on macOS and some browsers.\n\n" +
-                                          "Please try one of these alternatives:\n" +
-                                          "• Share a specific browser tab (with 'Share tab audio' enabled)\n" +
-                                          "• Share a specific application window (on Windows)\n" +
-                                          "• Use virtual audio routing software like BlackHole (Mac) or VB-Cable (Windows)\n" +
-                                          "• Switch to Microphone mode and use system audio loopback";
+                                "Please try one of these alternatives:\n" +
+                                "• Share a specific browser tab (with 'Share tab audio' enabled)\n" +
+                                "• Share a specific application window (on Windows)\n" +
+                                "• Use virtual audio routing software like BlackHole (Mac) or VB-Cable (Windows)\n" +
+                                "• Switch to Microphone mode and use system audio loopback";
                         } else if (displaySurface === 'window') {
                             errorMessage += "Window sharing may not support audio on your system.\n\n" +
-                                          "Please try:\n" +
-                                          "• Share a browser tab instead (with 'Share tab audio' enabled)\n" +
-                                          "• Use virtual audio routing software";
+                                "Please try:\n" +
+                                "• Share a browser tab instead (with 'Share tab audio' enabled)\n" +
+                                "• Use virtual audio routing software";
                         } else {
                             errorMessage += "Make sure to check 'Share system audio' or 'Share tab audio' in the browser dialog.\n\n" +
-                                          "If the option is not available:\n" +
-                                          "• Try sharing a browser tab instead of screen/window\n" +
-                                          "• Use virtual audio routing software";
+                                "If the option is not available:\n" +
+                                "• Try sharing a browser tab instead of screen/window\n" +
+                                "• Use virtual audio routing software";
                         }
-                        
+
                         alert(errorMessage);
                         console.log("Display surface type:", displaySurface);
-                        
+
                         microphoneSwitch.checked = false;
                         microphoneSwitch.disabled = false;
                         updateMainStatus("Ready");
                         return;
                     }
-                    
+
                     // Stop video track as we only need audio
                     videoTracks.forEach(track => track.stop());
-                    
+
                     // Create new stream with only audio
                     stream = new MediaStream(audioTracks);
-                    
+
                     // Log what type of capture was successful
                     const audioTrack = audioTracks[0];
                     console.log("Screen capture audio stream created successfully");
                     console.log("Audio track settings:", audioTrack.getSettings());
-                    
+
                 } catch (error) {
                     console.error("Error getting screen capture:", error);
-                    
+
                     let errorMessage = "Failed to get screen capture.\n\n";
                     if (error.name === 'NotAllowedError') {
                         errorMessage += "Permission was denied. Please allow screen sharing when prompted.";
@@ -581,7 +583,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     } else {
                         errorMessage += "Error: " + error.message;
                     }
-                    
+
                     alert(errorMessage);
                     microphoneSwitch.checked = false;
                     microphoneSwitch.disabled = false;
