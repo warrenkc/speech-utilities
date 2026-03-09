@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const microphoneOptions = document.getElementById("microphoneOptions");
     const microphoneSection = document.getElementById("microphoneSection");
     const screenCaptureSection = document.getElementById("screenCaptureSection");
+    const enableTts = document.getElementById("enableTts");
     const enableZoomCaptions = document.getElementById("enableZoomCaptions");
     const zoomApiUrlInput = document.getElementById("zoomApiUrl");
     const sequenceInput = document.getElementById("sequenceInput");
@@ -63,7 +64,9 @@ document.addEventListener('DOMContentLoaded', function () {
     Array.from(outputLanguageOptions.options).forEach(opt => {
         opt.selected = savedOutputLangs.includes(opt.value);
     });
+    updateTtsState();
     audioSourceOptions.value = localStorage.getItem('audioSource') || "microphone"; // Default audio source
+    enableTts.checked = localStorage.getItem('enableTts') === 'true';
     enableZoomCaptions.checked = localStorage.getItem('enableZoomCaptions') === 'true';
     zoomApiUrlInput.value = localStorage.getItem('zoomApiUrl') || "";
     captionSequence = parseInt(localStorage.getItem('captionSequence') || '0');
@@ -96,6 +99,7 @@ document.addEventListener('DOMContentLoaded', function () {
     outputLanguageOptions.addEventListener('change', saveOutputLanguageOption); // Save translation on input. This means that the translation is saved as soon as it is entered.
     audioSourceOptions.addEventListener('change', saveAudioSource); // Save audio source on change
     microphoneOptions.addEventListener('change', saveMicrophone); // Save microphone on input. This means that the microphone is saved as soon as it is entered.
+    enableTts.addEventListener('change', () => { localStorage.enableTts = enableTts.checked; showSettingsSavedMessage(); });
     enableZoomCaptions.addEventListener('change', saveZoomCaptionsSettings);
     zoomApiUrlInput.addEventListener('input', saveZoomCaptionsSettings);
     sequenceInput.addEventListener('input', saveCaptionSequence);
@@ -189,7 +193,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function saveOutputLanguageOption() {
         localStorage.outputLanguageOption = JSON.stringify(getSelectedOutputLanguages());
+        updateTtsState();
         showSettingsSavedMessage();
+    }
+
+    function updateTtsState() {
+        const single = getSelectedOutputLanguages().length === 1;
+        enableTts.disabled = !single;
+        if (!single) enableTts.checked = false;
     }
 
     function saveAudioSource() {
@@ -417,6 +428,26 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Convert Azure language codes to Zoom-compatible codes
+    function speakText(text, lang) {
+        if (!enableTts.checked || !text) return;
+        const ttsLangMap = {
+            'en': 'en-US', 'id': 'id-ID', 'es': 'es-ES',
+            'ja': 'ja-JP', 'zh-Hant': 'zh-TW', 'ko': 'ko-KR'
+        };
+        const speechConfig = SpeechSDK.SpeechConfig.fromSubscription(
+            subscriptionKeyInput.value.trim(),
+            regionOptions.value.trim()
+        );
+        speechConfig.speechSynthesisLanguage = ttsLangMap[lang] || lang;
+        const audioConfig = SpeechSDK.AudioConfig.fromDefaultSpeakerOutput();
+        const synthesizer = new SpeechSDK.SpeechSynthesizer(speechConfig, audioConfig);
+        synthesizer.speakTextAsync(
+            text,
+            () => synthesizer.close(),
+            () => synthesizer.close()
+        );
+    }
+
     function getZoomLanguageCode(azureLanguage) {
         const languageMap = {
             'en-US': 'en-US',
@@ -697,6 +728,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         outputTextarea.value += `[${lid}] ${event.result.text}` + (translationLines.length ? '\n' + translationLines.join('\n') : '') + "\r\n";
                         outputTextarea.scrollTop = outputTextarea.scrollHeight;
                         updateModalOutput();
+                        speakText(event.result.translations.get(selectedOutputLangs[0]), selectedOutputLangs[0]);
                     } else if (event.result.reason == SpeechSDK.ResultReason.RecognizedSpeech) {
                         captionText = event.result.text;
                         outputTextarea.value += `[${lid}] ${event.result.text}\r\n`;
@@ -716,6 +748,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         outputTextarea.value += output + "\r\n";
                         outputTextarea.scrollTop = outputTextarea.scrollHeight;
                         updateModalOutput();
+                        speakText(translations[0], selectedOutputLangs[0]);
                     } else if (event.result.reason == SpeechSDK.ResultReason.RecognizedSpeech) {
                         captionText = event.result.text;
                         outputTextarea.value += event.result.text + " (No translation available)\r\n";
