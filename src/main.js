@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
     regionOptions.value = localStorage.getItem('region') || "eastasia"; // Default region
     languageOptions.value = localStorage.getItem('language') || "en-US"; // Default language
     translationOptions.value = localStorage.getItem('translationOption') || "noTranslation"; // Default translation
+    toggleInProgressPanel();
     const rawOutputLang = localStorage.getItem('outputLanguageOption') || '["en"]';
     let savedOutputLangs;
     try {
@@ -174,7 +175,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function saveLanguage() {
         console.debug("Language: ", languageOptions.value);
         localStorage.language = languageOptions.value;
+        toggleInProgressPanel();
         showSettingsSavedMessage();
+    }
+
+    function toggleInProgressPanel() {
+        document.getElementById('outputTextInProgressDiv').classList.toggle('d-none', languageOptions.value === 'auto-detect');
     }
 
     function getSelectedOutputLanguages() {
@@ -666,7 +672,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             recognizer.recognizing = (s, event) => {
                 if (isAutoDetect) {
-                    // Show interim original text; translation arrives in recognized event
                     outputTextInProgress.value = event.result.text || "";
                 } else if (translationOptions.value === "azureTranslation") {
                     if (event.result.translations) {
