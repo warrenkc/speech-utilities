@@ -686,9 +686,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 let captionText = "";
 
                 if (isAutoDetect) {
-                    const lid = event.result.properties.getProperty(
-                        SpeechSDK.PropertyId.SpeechServiceConnection_AutoDetectSourceLanguageResult
-                    ) || 'Unknown';
+                    const lid = SpeechSDK.AutoDetectSourceLanguageResult.fromResult(event.result).language || 'Unknown';
 
                     if (event.result.reason == SpeechSDK.ResultReason.TranslatedSpeech) {
                         const translationLines = selectedOutputLangs
