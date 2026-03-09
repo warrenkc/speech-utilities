@@ -1,9 +1,5 @@
-import './style.css'
-import javascriptLogo from './javascript.svg'
-import viteLogo from '/vite.svg'
-import * as sdk from "microsoft-cognitiveservices-speech-sdk";
-
 // script.js
+// Uses global SpeechSDK loaded via CDN
 
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -55,7 +51,17 @@ document.addEventListener('DOMContentLoaded', function () {
     regionOptions.value = localStorage.getItem('region') || "eastasia"; // Default region
     languageOptions.value = localStorage.getItem('language') || "en-US"; // Default language
     translationOptions.value = localStorage.getItem('translationOption') || "noTranslation"; // Default translation
-    outputLanguageOptions.value = localStorage.getItem('outputLanguageOption') || "en-US"; // Default output language
+    const rawOutputLang = localStorage.getItem('outputLanguageOption') || '["en"]';
+    let savedOutputLangs;
+    try {
+        savedOutputLangs = JSON.parse(rawOutputLang);
+        if (!Array.isArray(savedOutputLangs)) savedOutputLangs = [savedOutputLangs];
+    } catch {
+        savedOutputLangs = [rawOutputLang]; // legacy plain string value
+    }
+    Array.from(outputLanguageOptions.options).forEach(opt => {
+        opt.selected = savedOutputLangs.includes(opt.value);
+    });
     audioSourceOptions.value = localStorage.getItem('audioSource') || "microphone"; // Default audio source
     enableZoomCaptions.checked = localStorage.getItem('enableZoomCaptions') === 'true';
     zoomApiUrlInput.value = localStorage.getItem('zoomApiUrl') || "";
@@ -140,11 +146,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // Show the message
-            settingsSavedStatus.style.display = 'block';
+            settingsSavedStatus.style.visibility = 'visible';
 
             // Hide after 2 seconds
             settingsSavedTimeout = setTimeout(() => {
-                settingsSavedStatus.style.display = 'none';
+                settingsSavedStatus.style.visibility = 'hidden';
             }, 2000);
         }
     }
@@ -171,8 +177,12 @@ document.addEventListener('DOMContentLoaded', function () {
         showSettingsSavedMessage();
     }
 
+    function getSelectedOutputLanguages() {
+        return Array.from(outputLanguageOptions.selectedOptions).map(o => o.value);
+    }
+
     function saveOutputLanguageOption() {
-        localStorage.outputLanguageOption = outputLanguageOptions.value;
+        localStorage.outputLanguageOption = JSON.stringify(getSelectedOutputLanguages());
         showSettingsSavedMessage();
     }
 
@@ -367,7 +377,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const zoomApiUrl = zoomApiUrlInput.value.trim();
         const language = translationOptions.value === "azureTranslation"
-            ? getZoomLanguageCode(outputLanguageOptions.value)
+            ? getZoomLanguageCode(getSelectedOutputLanguages()[0] || 'en')
             : getZoomLanguageCode(languageOptions.value);
 
         try {
@@ -610,25 +620,43 @@ document.addEventListener('DOMContentLoaded', function () {
                     stopSpeechToText();
                 });
             }
-            // Use SpeechTranslationConfig for translation, SpeechConfig otherwise
+            // Build speechConfig and recognizer based on language and translation options
             let speechConfig;
-            if (translationOptions.value === "azureTranslation") {
-                speechConfig = sdk.SpeechTranslationConfig.fromSubscription(subscriptionKey, region);
-                speechConfig.addTargetLanguage(outputLanguageOptions.value);
+            const isAutoDetect = languageOptions.value === 'auto-detect';
+            let autoDetectConfig = null;
+
+            const selectedOutputLangs = getSelectedOutputLanguages();
+
+            if (isAutoDetect) {
+                // Auto-detect requires the V2 universal endpoint (open range language ID)
+                const v2Endpoint = `wss://${region}.stt.speech.microsoft.com/speech/universal/v2`;
+                speechConfig = SpeechSDK.SpeechTranslationConfig.fromEndpoint(new URL(v2Endpoint), subscriptionKey);
+                selectedOutputLangs.forEach(lang => speechConfig.addTargetLanguage(lang));
+                speechConfig.setProperty(
+                    SpeechSDK.PropertyId.SpeechServiceConnection_LanguageIdMode,
+                    'Continuous'
+                );
+                autoDetectConfig = SpeechSDK.AutoDetectSourceLanguageConfig.fromOpenRange();
+            } else if (translationOptions.value === "azureTranslation") {
+                speechConfig = SpeechSDK.SpeechTranslationConfig.fromSubscription(subscriptionKey, region);
+                selectedOutputLangs.forEach(lang => speechConfig.addTargetLanguage(lang));
             } else {
-                speechConfig = sdk.SpeechConfig.fromSubscription(subscriptionKey, region);
+                speechConfig = SpeechSDK.SpeechConfig.fromSubscription(subscriptionKey, region);
             }
 
-            speechConfig.speechRecognitionLanguage = languageOptions.value;
-            audioConfig = sdk.AudioConfig.fromStreamInput(stream);
+            if (!isAutoDetect) {
+                speechConfig.speechRecognitionLanguage = languageOptions.value;
+            }
 
-            // Use TranslationRecognizer for translation, SpeechRecognizer otherwise
+            audioConfig = SpeechSDK.AudioConfig.fromStreamInput(stream);
 
-            if (translationOptions.value === "azureTranslation") {
-
-                recognizer = new sdk.TranslationRecognizer(speechConfig, audioConfig);
+            // Use TranslationRecognizer.FromConfig for auto-detect, otherwise standard recognizers
+            if (isAutoDetect) {
+                recognizer = SpeechSDK.TranslationRecognizer.FromConfig(speechConfig, autoDetectConfig, audioConfig);
+            } else if (translationOptions.value === "azureTranslation") {
+                recognizer = new SpeechSDK.TranslationRecognizer(speechConfig, audioConfig);
             } else {
-                recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
+                recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
             }
             console.log("recognizer: ", recognizer);
 
@@ -637,55 +665,68 @@ document.addEventListener('DOMContentLoaded', function () {
             startTimer(); // Start the billable time timer
 
             recognizer.recognizing = (s, event) => {
-                // Intermediate result (while speaking) - applies to both translation and non-translation
-                if (translationOptions.value === "azureTranslation") {
-                    console.log("Recognizing - azureTranslation", event);
-                    // The following line is wrong.
-                    //outputTextInProgress.value = event.result.translations.get(outputLanguageOptions.value); // Show translated text
+                if (isAutoDetect) {
+                    // Show interim original text; translation arrives in recognized event
+                    outputTextInProgress.value = event.result.text || "";
+                } else if (translationOptions.value === "azureTranslation") {
                     if (event.result.translations) {
-                        outputTextInProgress.value = event.result.translations.get(outputLanguageOptions.value) || "";
+                        outputTextInProgress.value = event.result.translations.get(selectedOutputLangs[0]) || "";
                     }
                 } else {
                     outputTextInProgress.value = event.result.text;
                 }
-                // Update modal if it's open (only for complete output, not in-progress)
             };
 
             recognizer.recognized = async (s, event) => {
                 let captionText = "";
 
-                if (translationOptions.value === "azureTranslation") {
-                    console.log("Recognized - azureTranslation", event);
-                    console.log("event.result.reason: ", event.result.reason);
-                    if (event.result.reason == sdk.ResultReason.TranslatedSpeech) {
-                        // Access the translation
-                        console.log("event.result.translations: ", event.result.translations);
-                        const translation = event.result.translations.get(outputLanguageOptions.value);
-                        captionText = translation;
-                        outputTextarea.value += translation + "\r\n";
-                        // Scroll to bottom
+                if (isAutoDetect) {
+                    const lid = event.result.properties.getProperty(
+                        SpeechSDK.PropertyId.SpeechServiceConnection_AutoDetectSourceLanguageResult
+                    ) || 'Unknown';
+
+                    if (event.result.reason == SpeechSDK.ResultReason.TranslatedSpeech) {
+                        const translationLines = selectedOutputLangs
+                            .map(lang => event.result.translations.get(lang))
+                            .filter(Boolean)
+                            .map((t, i) => `[${selectedOutputLangs[i]}] ${t}`);
+                        captionText = event.result.translations.get(selectedOutputLangs[0]) || event.result.text;
+                        outputTextarea.value += `[${lid}] ${event.result.text}` + (translationLines.length ? '\n' + translationLines.join('\n') : '') + "\r\n";
                         outputTextarea.scrollTop = outputTextarea.scrollHeight;
-                        // Update modal if it's open
                         updateModalOutput();
-                    } else if (event.result.reason == sdk.ResultReason.RecognizedSpeech) {
+                    } else if (event.result.reason == SpeechSDK.ResultReason.RecognizedSpeech) {
+                        captionText = event.result.text;
+                        outputTextarea.value += `[${lid}] ${event.result.text}\r\n`;
+                        outputTextarea.scrollTop = outputTextarea.scrollHeight;
+                        updateModalOutput();
+                    } else if (event.result.reason == SpeechSDK.ResultReason.NoMatch) {
+                        outputTextarea.value += "No speech could be recognized...\r\n";
+                        updateModalOutput();
+                    }
+                } else if (translationOptions.value === "azureTranslation") {
+                    if (event.result.reason == SpeechSDK.ResultReason.TranslatedSpeech) {
+                        const translations = selectedOutputLangs.map(lang => event.result.translations.get(lang)).filter(Boolean);
+                        captionText = translations[0] || event.result.text;
+                        const output = selectedOutputLangs.length > 1
+                            ? selectedOutputLangs.map(lang => event.result.translations.get(lang)).filter(Boolean).map((t, i) => `[${selectedOutputLangs[i]}] ${t}`).join('\n')
+                            : (translations[0] || '');
+                        outputTextarea.value += output + "\r\n";
+                        outputTextarea.scrollTop = outputTextarea.scrollHeight;
+                        updateModalOutput();
+                    } else if (event.result.reason == SpeechSDK.ResultReason.RecognizedSpeech) {
                         captionText = event.result.text;
                         outputTextarea.value += event.result.text + " (No translation available)\r\n";
-                        // Scroll to bottom
                         outputTextarea.scrollTop = outputTextarea.scrollHeight;
-                        // Update modal if it's open
                         updateModalOutput();
                     }
                 } else { //Original no translation code
-                    if (event.result.reason == sdk.ResultReason.RecognizedSpeech) {
+                    if (event.result.reason == SpeechSDK.ResultReason.RecognizedSpeech) {
                         captionText = event.result.text;
                         outputTextarea.value += event.result.text + "\r\n";
-                        // Scroll to bottom
                         outputTextarea.scrollTop = outputTextarea.scrollHeight;
-                        // Update modal if it's open
                         updateModalOutput();
-                    } else if (event.result.reason == sdk.ResultReason.NoMatch) {
+                    } else if (event.result.reason == SpeechSDK.ResultReason.NoMatch) {
                         outputTextarea.value += "No speech could be recognized...\r\n";
-                        // Update modal if it's open
                         updateModalOutput();
                     }
                 }
@@ -712,7 +753,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             recognizer.canceled = (s, event) => {
                 console.log(`Recognition canceled. Reason: ${event.reason}`);
-                if (event.reason == sdk.CancellationReason.Error) {
+                if (event.reason == SpeechSDK.CancellationReason.Error) {
                     updateMainStatus(`ERROR: ${event.errorDetails}`);
                 }
                 microphoneSwitch.checked = false; // Reset switch state
