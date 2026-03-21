@@ -703,7 +703,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             recognizer.recognizing = (s, event) => {
                 if (isAutoDetect) {
-                    outputTextInProgress.value = event.result.text || "";
+                    if (event.result.translations && event.result.translations.get(selectedOutputLangs[0])) {
+                        outputTextInProgress.value = event.result.translations.get(selectedOutputLangs[0]);
+                    } else {
+                        outputTextInProgress.value = event.result.text || "";
+                    }
                 } else if (translationOptions.value === "azureTranslation") {
                     if (event.result.translations) {
                         outputTextInProgress.value = event.result.translations.get(selectedOutputLangs[0]) || "";
@@ -720,12 +724,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     const lid = SpeechSDK.AutoDetectSourceLanguageResult.fromResult(event.result).language || 'Unknown';
 
                     if (event.result.reason == SpeechSDK.ResultReason.TranslatedSpeech) {
-                        const translationLines = selectedOutputLangs
-                            .map(lang => event.result.translations.get(lang))
-                            .filter(Boolean)
-                            .map((t, i) => `[${selectedOutputLangs[i]}] ${t}`);
-                        captionText = event.result.translations.get(selectedOutputLangs[0]) || event.result.text;
-                        outputTextarea.value += `[${lid}] ${event.result.text}` + (translationLines.length ? '\n' + translationLines.join('\n') : '') + "\r\n";
+                        const translations = selectedOutputLangs.map(lang => event.result.translations.get(lang)).filter(Boolean);
+                        captionText = translations[0] || event.result.text;
+
+                        let outputText = `[${lid}] ${event.result.text}`;
+                        if (translations.length > 0) {
+                            if (selectedOutputLangs.length > 1) {
+                                const translationLines = translations.map((t, i) => `[${selectedOutputLangs[i]}] ${t}`);
+                                outputText = `[${lid}]\n` + translationLines.join('\n');
+                            } else {
+                                outputText = `[${lid}] ${translations[0]}`;
+                            }
+                        }
+
+                        outputTextarea.value += outputText + "\r\n";
                         outputTextarea.scrollTop = outputTextarea.scrollHeight;
                         updateModalOutput();
                         speakText(event.result.translations.get(selectedOutputLangs[0]), selectedOutputLangs[0]);
