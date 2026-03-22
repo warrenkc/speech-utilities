@@ -283,28 +283,38 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function appendOutputText(text) {
-        // Check if main text area is scrolled to bottom
-        const isMainScrolledToBottom = Math.abs(outputTextarea.scrollHeight - outputTextarea.scrollTop - outputTextarea.clientHeight) <= 10;
+        // Check if main text area is scrolled to top
+        const isMainScrolledToTop = outputTextarea.scrollTop <= 10;
+        const oldScrollHeight = outputTextarea.scrollHeight;
 
-        outputTextarea.value += text + "\r\n";
+        outputTextarea.value = text + "\r\n" + outputTextarea.value;
 
-        // Scroll to bottom if it was already at the bottom or if it's the first line
-        if (isMainScrolledToBottom || outputTextarea.value.trim() === text.trim()) {
+        // Scroll to top if it was already at the top or if it's the first line
+        if (isMainScrolledToTop || outputTextarea.value.trim() === text.trim()) {
             outputTextarea.scrollTo({
-                top: outputTextarea.scrollHeight,
+                top: 0,
                 behavior: 'smooth'
             });
+        } else {
+            // Adjust scroll position so the content doesn't jump
+            const newScrollHeight = outputTextarea.scrollHeight;
+            outputTextarea.scrollTop += (newScrollHeight - oldScrollHeight);
         }
 
         // Update modal textarea if modal is open
         if (fullScreenOutputModal.classList.contains('show')) {
-            const isModalScrolledToBottom = Math.abs(fullScreenOutputText.scrollHeight - fullScreenOutputText.scrollTop - fullScreenOutputText.clientHeight) <= 10;
+            const isModalScrolledToTop = fullScreenOutputText.scrollTop <= 10;
+            const oldModalScrollHeight = fullScreenOutputText.scrollHeight;
+            
             fullScreenOutputText.value = outputTextarea.value;
-            if (isModalScrolledToBottom || outputTextarea.value.trim() === text.trim()) {
+            if (isModalScrolledToTop || outputTextarea.value.trim() === text.trim()) {
                 fullScreenOutputText.scrollTo({
-                    top: fullScreenOutputText.scrollHeight,
+                    top: 0,
                     behavior: 'smooth'
                 });
+            } else {
+                const newModalScrollHeight = fullScreenOutputText.scrollHeight;
+                fullScreenOutputText.scrollTop += (newModalScrollHeight - oldModalScrollHeight);
             }
         }
     }
