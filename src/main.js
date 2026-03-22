@@ -282,11 +282,30 @@ document.addEventListener('DOMContentLoaded', function () {
         fullScreenOutputText.value = outputTextarea.value;
     }
 
-    function updateModalOutput() {
+    function appendOutputText(text) {
+        // Check if main text area is scrolled to bottom
+        const isMainScrolledToBottom = Math.abs(outputTextarea.scrollHeight - outputTextarea.scrollTop - outputTextarea.clientHeight) <= 10;
+
+        outputTextarea.value += text + "\r\n";
+
+        // Scroll to bottom if it was already at the bottom or if it's the first line
+        if (isMainScrolledToBottom || outputTextarea.value.trim() === text.trim()) {
+            outputTextarea.scrollTo({
+                top: outputTextarea.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
         // Update modal textarea if modal is open
         if (fullScreenOutputModal.classList.contains('show')) {
+            const isModalScrolledToBottom = Math.abs(fullScreenOutputText.scrollHeight - fullScreenOutputText.scrollTop - fullScreenOutputText.clientHeight) <= 10;
             fullScreenOutputText.value = outputTextarea.value;
-            fullScreenOutputText.scrollTop = fullScreenOutputText.scrollHeight;
+            if (isModalScrolledToBottom || outputTextarea.value.trim() === text.trim()) {
+                fullScreenOutputText.scrollTo({
+                    top: fullScreenOutputText.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
         }
     }
 
@@ -737,18 +756,13 @@ document.addEventListener('DOMContentLoaded', function () {
                             }
                         }
 
-                        outputTextarea.value += outputText + "\r\n";
-                        outputTextarea.scrollTop = outputTextarea.scrollHeight;
-                        updateModalOutput();
+                        appendOutputText(outputText);
                         speakText(event.result.translations.get(selectedOutputLangs[0]), selectedOutputLangs[0]);
                     } else if (event.result.reason == SpeechSDK.ResultReason.RecognizedSpeech) {
                         captionText = event.result.text;
-                        outputTextarea.value += `[${lid}] ${event.result.text}\r\n`;
-                        outputTextarea.scrollTop = outputTextarea.scrollHeight;
-                        updateModalOutput();
+                        appendOutputText(`[${lid}] ${event.result.text}`);
                     } else if (event.result.reason == SpeechSDK.ResultReason.NoMatch) {
-                        outputTextarea.value += "No speech could be recognized...\r\n";
-                        updateModalOutput();
+                        appendOutputText("No speech could be recognized...");
                     }
                 } else if (translationOptions.value === "azureTranslation") {
                     if (event.result.reason == SpeechSDK.ResultReason.TranslatedSpeech) {
@@ -757,25 +771,18 @@ document.addEventListener('DOMContentLoaded', function () {
                         const output = selectedOutputLangs.length > 1
                             ? selectedOutputLangs.map(lang => event.result.translations.get(lang)).filter(Boolean).map((t, i) => `[${selectedOutputLangs[i]}] ${t}`).join('\n')
                             : (translations[0] || '');
-                        outputTextarea.value += output + "\r\n";
-                        outputTextarea.scrollTop = outputTextarea.scrollHeight;
-                        updateModalOutput();
+                        appendOutputText(output);
                         speakText(translations[0], selectedOutputLangs[0]);
                     } else if (event.result.reason == SpeechSDK.ResultReason.RecognizedSpeech) {
                         captionText = event.result.text;
-                        outputTextarea.value += event.result.text + " (No translation available)\r\n";
-                        outputTextarea.scrollTop = outputTextarea.scrollHeight;
-                        updateModalOutput();
+                        appendOutputText(event.result.text + " (No translation available)");
                     }
                 } else { //Original no translation code
                     if (event.result.reason == SpeechSDK.ResultReason.RecognizedSpeech) {
                         captionText = event.result.text;
-                        outputTextarea.value += event.result.text + "\r\n";
-                        outputTextarea.scrollTop = outputTextarea.scrollHeight;
-                        updateModalOutput();
+                        appendOutputText(event.result.text);
                     } else if (event.result.reason == SpeechSDK.ResultReason.NoMatch) {
-                        outputTextarea.value += "No speech could be recognized...\r\n";
-                        updateModalOutput();
+                        appendOutputText("No speech could be recognized...");
                     }
                 }
 
